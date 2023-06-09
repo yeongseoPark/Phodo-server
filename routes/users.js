@@ -384,12 +384,12 @@ router.post('/forgot', (req, res, next) => {
         to: user.email,
         from : '1park4170@gmail.com',
         subject : 'Recovery Email from Auth Project',
-        // text : 'Please click the following link to recover your passoword: \n\n'+
-        //                 'http://'+ req.headers.host +'/reset/'+token+'\n\n'+
-        //                 'If you did not request this, please ignore this email.'
         text : 'Please click the following link to recover your passoword: \n\n'+
-                        'http://localhost:3033/reset/'+token+'\n\n'+
+                        'http://'+ req.headers.host +'/reset/'+token+'\n\n'+
                         'If you did not request this, please ignore this email.'
+        // text : 'Please click the following link to recover your passoword: \n\n'+
+        //                 'http://localhost:3033/reset/'+token+'\n\n'+
+        //                 'If you did not request this, please ignore this email.'
       };
       smtpTransport.sendMail(mailOptions, err=> {
         res.status(200).json({'message': 'Email send with further instructions. Please check that.'});
@@ -467,15 +467,27 @@ router.post('/reset/:token', (req, res) => {
             return;
           }
 
-          user.setPassword(req.body.password, err => {
+          user.setPassword(req.body.password, async err => {
             user.resetPasswordToken = undefined; // 더이상 얘는 필요없음
             user.resetPasswordExpires = undefined;
+            
+            function logIn(req, user) {
+                return new Promise((resolve, reject) => {
+                  req.logIn(user, (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                  });
+                });
+              }
 
-            user.save(err => {
-              req.logIn(user, err => {
-                done(err, user);
-              });
-            });
+              try {
+                  await user.save();
+                  await logIn(req, user);
+                  done(null, user);
+              } catch (err) {
+                  done(err);
+              }
+
           });
 
         })
@@ -506,6 +518,7 @@ router.post('/reset/:token', (req, res) => {
     }
 
   ],err => {
+    console.log(err.message);
     res.status(400).json({'message': 'reset failed'});
   });
 });
