@@ -1,10 +1,13 @@
-require('dotenv').config();
 const path = require('path');
 const express = require('express'); 
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const PORT = 3000;
 const app = express();
+
+const dotenv = require('dotenv');
+const flash = require('connect-flash');
+dotenv.config({path : './.env'});
 
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
 // npm install : dotenv, path, express, mongoose, cookieParser
@@ -17,7 +20,8 @@ app.use(cors());
 const corsOptions = {
   origin: '*', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
-  allowedHeaders: 'Content-Type',
+  allowedHeaders: 'Content-Type',  
+  credentials : true
 };
 
 // CORS 미들웨어를 사용하여 모든 경로에 대해 CORS 옵션 적용
@@ -35,6 +39,7 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // ROUTES
 app.use('/api', require('./routes/api'));
+app.use(flash());
 
 //HANDLE CLIENT-SIDE ROUTING
 app.get('*', (req, res) => {
@@ -43,6 +48,7 @@ app.get('*', (req, res) => {
 
 // UNKNOWN ROUTE HANDLER
 app.use((req, res) => res.status(404).send('404 Not Found'));
+app.use(flash());
 
 // GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
