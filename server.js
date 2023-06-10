@@ -10,7 +10,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
 
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
@@ -25,16 +25,17 @@ const app = express();
 dotenv.config({path : './.env'});
 
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
-// 모듈 설치 : dotenv, path, express, mongoose, cookieParser
+// npm install : dotenv, path, express, mongoose, cookieParser
 const fileUpload = require('express-fileupload');
 app.use(fileUpload());
+
 app.use(cors());
 
 // CORS 옵션 설정
 const corsOptions = {
   origin: '*', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
-  allowedHeaders: 'Content-Type',
+  allowedHeaders: 'Content-Type',  
   credentials : true
 };
 
@@ -58,20 +59,20 @@ app.use(flash());
 
 // middleware for session
 app.use(session({
-  secret : 'Just a simple login/sign up application.',
-  resave : true,
-  saveUninitialized : true
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Requiring user model
-const User = require('./models/usermodel');
-
-
-const userRoutes = require('./routes/users');
-app.use(userRoutes);
+    secret : 'Just a simple login/sign up application.',
+    resave : true,
+    saveUninitialized : true
+  }));
+  
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
+  // Requiring user model
+  const User = require('./models/usermodel');
+  
+  
+  const userRoutes = require('./routes/users');
+  app.use(userRoutes);
 
 //HANDLE CLIENT-SIDE ROUTING
 app.get('*', (req, res) => {
@@ -81,45 +82,44 @@ app.get('*', (req, res) => {
 // passport.use(new LocalStrategy({usernameField : 'email'}, User.authenticate()));
 
 passport.use(new LocalStrategy({
-  usernameField: 'email',   
-  passwordField: 'password',   
-}, async (email, password, done) => {
-  try {
-    const exUser = await User.findOne({ email: email });
-    if (exUser) {
-      exUser.authenticate(password, (err, user, passwordError) => {
-        if (passwordError) {
-          // Incorrect password
-          done(null, false, {message : '비밀번호가 일치하지 않습니다'});
-        } else if (err) {
-          // Other error
-          done(err);
-        } else {
-          // Success
-          done(null, user);
-        }
-      });
-    } else {
-      done(null, false, {message : '가입되지 않은 회원입니다'})
+    usernameField: 'email',   
+    passwordField: 'password',   
+  }, async (email, password, done) => {
+    try {
+      const exUser = await User.findOne({ email: email });
+      if (exUser) {
+        exUser.authenticate(password, (err, user, passwordError) => {
+          if (passwordError) {
+            // Incorrect password
+            done(null, false, {message : '비밀번호가 일치하지 않습니다'});
+          } else if (err) {
+            // Other error
+            done(err);
+          } else {
+            // Success
+            done(null, user);
+          }
+        });
+      } else {
+        done(null, false, {message : '가입되지 않은 회원입니다'})
+      }
+    } catch (error) {
+      console.error(error);
+      done(error);
     }
-  } catch (error) {
-    console.error(error);
-    done(error);
-  }
-}));
-
-
-/* passport는 현재 로그인한 유저에 대한 세션을 유지
-밑의 2개의 라인으로 그 세션을 유지할 수 있음
-- 유저가 dashboard에 접근할수 있게 하려면(세션을 기반으로)
-serialize/ deserialize로 이를 가능케 함(??)
-*/
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
-
+  }));
+  
+  
+  /* passport는 현재 로그인한 유저에 대한 세션을 유지
+  밑의 2개의 라인으로 그 세션을 유지할 수 있음
+  - 유저가 dashboard에 접근할수 있게 하려면(세션을 기반으로)
+  serialize/ deserialize로 이를 가능케 함(??)
+  */
+  passport.serializeUser(User.serializeUser());
+  passport.deserializeUser(User.deserializeUser());
+  
 // UNKNOWN ROUTE HANDLER
 app.use((req, res) => res.status(404).send('404 Not Found'));
-// midleware for flash messages
 app.use(flash());
 
 // // setting middleware globally
@@ -150,7 +150,6 @@ app.set('views', path.join(__dirname, '../client/views'));
 
 // MONGODB CONNECTION
 mongoose.connect(process.env.MONGO_URI, {
-  
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
