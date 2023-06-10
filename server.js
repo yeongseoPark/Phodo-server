@@ -53,6 +53,7 @@ app.use(cookieParser()); // Parses cookies attached to the client request object
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
 // ROUTES
+// const userRoutes = require('./routes/users');
 app.use('/api', require('./routes/api'));
 app.use(flash());
 
