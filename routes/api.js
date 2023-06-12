@@ -25,7 +25,7 @@ const storage = new Storage({
 router.post('/upload', (req, res) => {
     // 클라이언트로부터 이미지 파일 받기
     const image = req.files.image;
-    console.log(image)
+    console.log('imageInfo: \n', image);
 
     // 이미지 파일 업로드
     const bucket = storage.bucket('jungle_project');    // Cloud Storage 버킷 이름(jungle_project)
@@ -53,17 +53,27 @@ router.post('/upload', (req, res) => {
             // Google Cloud Vision API로 이미지 태그 생성
             const [result] = await vision.labelDetection(imageUrl);
             const labels = result.labelAnnotations;
+                   
+            // 생성된 태그(labels)를 해당하는 카테고리로 변환해서 반환   
+            const Tags = [];
+            // 딕셔너리 선언(output.json)
+            const dictionary = require('../label_classification/output.json');
 
-            // 이미지 태그를 배열 형태로 변환
-            const imageTags = labels.map(label => ({
-                description : label.description,
-                score: label.score,
-            }));
+            labels.forEach((label) => {
+                // 딕셔너리에서 각 label에 해당하는 value값을 태그에 추가
+                const value = dictionary[label.description.toLowerCase()];
+                if (value) {
+                    Tags.push(value);
+                }
+            });
+            // 중복값 제거
+            const imageTagsSet = new Set(Tags);
+            const imageTags = [...imageTagsSet];
+ 
+            console.log('imageUrl: ', imageUrl);
+            console.log('imageTags: ', imageTags);
 
-            console.log(imageUrl);
-            console.log(imageTags);
-
-            //MongoDB에 이미지 URL과 태그 저장
+            // MongoDB에 이미지 URL과 태그 저장
             const imageDocument = new Image({ url: imageUrl, tags: imageTags }); // mongoDB의 Image 컬렉션에 저장될 문서를 의미함
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
@@ -81,7 +91,7 @@ router.post('/upload', (req, res) => {
     stream.end(image.data);
 });
 
-// 갤러리로 이미지 전송 라우트 핸들러
+// 갤러리로 전체 이미지 전송 라우트 핸들러
 router.get('/gallery', async (req, res) => {
     try {
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
@@ -91,11 +101,25 @@ router.get('/gallery', async (req, res) => {
         // url과 tags를 배열 형식으로 추출
         const imageUrls = images.map((image) => image.url);
         const imageTags = images.map((image) => image.tags); 
+
+        // 성공 시
         res.status(200).json({ url: imageUrls, tags: imageTags }); 
-    } catch (err) { 
+    } catch (err) {  // 실패 시
       console.error(err);
       res.status(500).json({ error: 'Failed to fetch image URLs and Tags' });
     } 
+});
+
+/* ----------------- dohee : 작성 중ing... ------------------ */
+// 갤러리로 태그별 이미지 전송 라우트 핸들러
+router.get('/galleryTags', async (req, res) => {
+    try {
+        // mongoDB에서 tag별 이미지 파일 가져오기
+        
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch image URLs and Tags'})
+    }
 });
 
 
