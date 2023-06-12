@@ -19,7 +19,7 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 
-const PORT = 3000;
+const PORT = 4000;
 const app = express();
 
 dotenv.config({path : './.env'});

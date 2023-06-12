@@ -4,6 +4,7 @@ const path = require('path');
 const { Storage } = require('@google-cloud/storage');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const Image = require('../models/image');   // 이미지 모델 정의
+const sharp = require('sharp'); // image resizing to make thumbnail
 
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
 // 이미지 업로드 및 URL 저장에 필요한 모듈 임포트 (npm install @google-cloud/storage, npm install @google-cloud/vision)
@@ -45,46 +46,63 @@ router.post('/upload', (req, res) => {
     });
 
     // 이미지 업로드 완료 처리(2) : 업로드 완료 시 (스트림이 모든 데이터를 업로드 한 후)
-    stream.on('finish', async () => {
-        // 업로드한 이미지 url 생성
-        const imageUrl = `https://storage.googleapis.com/jungle_project/${gcsFileName}`;
+    // 이미지 업로드 완료 처리(2) : 업로드 완료 시 (스트림이 모든 데이터를 업로드 한 후)
+stream.on('finish', async () => {
+    // 업로드한 이미지 url 생성
+    const imageUrl = `https://storage.googleapis.com/jungle_project/${gcsFileName}`;
+
+    // 원본 이미지 파일을 다운로드 받아서 리사이징 후 다시 업로드
+    const tmpFilePath = `/tmp/${gcsFileName}`;
+    await file.download({ destination: tmpFilePath });
+    
+    // sharp를 사용해 이미지 사이즈 변경
+    const resizedFileName = `thumbnail_${gcsFileName}`;
+    const resizedFilePath = `/tmp/${resizedFileName}`;
+    await sharp(tmpFilePath).resize(50).toFile(resizedFilePath);
+
+    // 리사이징한 이미지를 다시 업로드
+    const resizedFile = bucket.file(resizedFileName);
+    await bucket.upload(resizedFilePath);
+    const thumbnailUrl = `https://storage.googleapis.com/jungle_project/${resizedFileName}`;
+    
+    try {
+        // Google Cloud Vision API로 이미지 태그 생성
+        const [result] = await vision.labelDetection(imageUrl);
+        const labels = result.labelAnnotations;
         
-        try {
-            // Google Cloud Vision API로 이미지 태그 생성
-            const [result] = await vision.labelDetection(imageUrl);
-            const labels = result.labelAnnotations;
-                   
-            // 생성된 태그(labels)를 해당하는 카테고리로 변환해서 반환   
-            const Tags = [];
-            // 딕셔너리 선언(output.json)
-            const dictionary = require('../label_classification/output.json');
+        // 생성된 태그(labels)를 해당하는 카테고리로 변환해서 반환   
+        const Tags = [];
+        // 딕셔너리 선언(output.json)
+        const dictionary = require('../label_classification/output.json');
 
-            labels.forEach((label) => {
-                // 딕셔너리에서 각 label에 해당하는 value값을 태그에 추가
-                const value = dictionary[label.description.toLowerCase()];
-                if (value) {
-                    Tags.push(value);
-                }
-            });
-            // 중복값 제거
-            const imageTagsSet = new Set(Tags);
-            const imageTags = [...imageTagsSet];
- 
-            console.log('imageUrl: ', imageUrl);
-            console.log('imageTags: ', imageTags);
+        labels.forEach((label) => {
+            // 딕셔너리에서 각 label에 해당하는 value값을 태그에 추가
+            const value = dictionary[label.description.toLowerCase()];
+            if (value) {
+                Tags.push(value);
+            }
+        });
+        // 중복값 제거
+        const imageTagsSet = new Set(Tags);
+        const imageTags = [...imageTagsSet];
+        
+        console.log('imageUrl: ', imageUrl);
+        console.log('imageTags: ', imageTags);
+        console.log('thumbnailUrl: ', thumbnailUrl);
 
-            // MongoDB에 이미지 URL과 태그 저장
-            const imageDocument = new Image({ url: imageUrl, tags: imageTags }); // mongoDB의 Image 컬렉션에 저장될 문서를 의미함
-            await imageDocument.save(); // save() 메서드 : mongoDB에 저장
+        // MongoDB에 이미지 URL과 태그 저장
+        const imageDocument = new Image({ url: imageUrl, tags: imageTags, thumbnailUrl: thumbnailUrl }); // mongoDB의 Image 컬렉션에 저장될 문서를 의미함
+        await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
-            // 성공 시 : 상태코드 200과 성공 메세지 전
-            res.status(200).json({ message: 'Image uploaded and URL saved' });
+        // 성공 시 : 상태코드 200과 성공 메세지 전
+        res.status(200).json({ message: 'Image and thumbnail uploaded and URL saved' });
 
-        } catch (err) {  // 실패 시 : 상태코드 500과 에러 메세지 전달
-            console.error(err);
-            res.status(500).json({ error: 'Failed to save image URL' });
-        }
-    });    
+    } catch (err) {  // 실패 시 : 상태코드 500과 에러 메세지 전달
+        console.error(err);
+        res.status(500).json({ error: 'Failed to save image and thumbnail URL' });
+    }
+});    
+
 
     // 이미지 파일 스트림 종료 및 업로드 완료
     // end 메서드 : 스트림을 종료하고 작업을 완료, image.data : 이미지 데이터 자체.
