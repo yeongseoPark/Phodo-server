@@ -385,7 +385,7 @@ router.post('/forgot', (req, res, next) => {
         from : '1park4170@gmail.com',
         subject : 'Recovery Email from Auth Project',
         text : 'Please click the following link to recover your passoword: \n\n'+
-                        'http://'+ req.headers.host +'/reset/'+token+'\n\n'+
+                        'http://localhost:3000/reset/'+token+'\n\n'+
                         'If you did not request this, please ignore this email.'
         // text : 'Please click the following link to recover your passoword: \n\n'+
         //                 'http://localhost:3033/reset/'+token+'\n\n'+
