@@ -136,12 +136,13 @@ app.use((err, req, res, next) => {
   const defaultErr = {
     log: 'Express error handler caught unknown middleware error',
     status: 400,
-    message: { err: 'An error occurred' },
+    message: { err: 'An error occurred', info: 'Express error handler caught unknown middleware error' },
   };
   const errorObj = Object.assign({}, defaultErr, err);
-  console.log(errorObj.log);
+  console.log(errorObj);
   return res.status(errorObj.status).json(errorObj.message);
 });
+
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
@@ -155,6 +156,8 @@ mongoose.connect(process.env.MONGO_URI, {
 })
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.log(err));
+
+
 
 // SERVER LISTEN
 app.listen(PORT, () => {
