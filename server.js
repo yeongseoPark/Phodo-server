@@ -65,11 +65,13 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 // ROUTES
 // const userRoutes = require('./routes/users');
 app.use('/api', require('./routes/api'));
+app.use('/api', require('./routes/nodes'));
+app.use('/', require('./routes/nodes'));
 app.use(flash());
 
 
   
-  // Requiring user model
+  // Requiring  model
   const User = require('./models/usermodel');
   
   
