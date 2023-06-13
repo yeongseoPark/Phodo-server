@@ -77,8 +77,7 @@ const edgeRoutes = require('./routes/edges');
 app.use(edgeRoutes);
 
 app.use('/api', require('./routes/api'));
-app.use('/api', require('./routes/nodes'));
-app.use('/', require('./routes/nodes'));
+app.use('', require('./routes/nodes'));
 app.use(flash());
 
 //HANDLE CLIENT-SIDE ROUTING

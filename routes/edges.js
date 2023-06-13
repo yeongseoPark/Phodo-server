@@ -5,17 +5,23 @@ const Edge = require('../models/edge');
 
 // Create
 router.post('/edges', async (req, res) => {
-    const edge = new Edge({
-        edgeId: req.body.edgeId,
-        source: req.body.source,
-        target: req.body.target
-    });
-    try {
-        const savedEdge = await edge.save();
-        res.json(savedEdge);
-    } catch (err) {
-        res.json({ message: err });
+    const edgeList = req.body.edges;
+    for (let i = 0; i < edgeList.length; i++) {
+        let edgeCurr = edgeList[i];
+        let edge = new Edge({
+            edgeId: edgeCurr.id,
+            source: edgeCurr.source,
+            target: edgeCurr.target
+        });
+        try {
+            const savedEdge = await edge.save();
+        } catch (err) {
+            res.json({ message: err });
+            return;
+        }
     }
+    res.status(200).json({ message: 'Edge succesfully saved.' });
+    
 });
 
 // Read
