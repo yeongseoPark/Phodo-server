@@ -1,18 +1,19 @@
 const mongoose = require('mongoose');
 
-const edgeSchema = new mongoose.Schema({
-    startNodeId : {
-        type : mongoose.Schema.Types.ObjectId,
-        required : true,
-        ref : 'Node',
-      },
-    endNodeId : {
-        type : mongoose.Schema.Types.ObjectId,
-        required : true,
-        ref : 'Node',
-      },
+const EdgeSchema = mongoose.Schema({
+    edgeId: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    source: {
+        type: Number,
+        required: true
+    },
+    target: {
+        type: Number,
+        required: true
+    }
 });
 
-const Edge = mongoose.model('Edge', edgeSchema);
-
-module.exports = Edge;
+module.exports = mongoose.model('Edges', EdgeSchema);

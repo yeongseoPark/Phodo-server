@@ -62,21 +62,24 @@ app.use(cookieParser()); // Parses cookies attached to the client request object
 // SERVE STATIC FILES
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
+
+
+// Requiring user model
+const User = require('./models/usermodel');
+
+
+const userRoutes = require('./routes/users');
+app.use(userRoutes);
+
 // ROUTES
 // const userRoutes = require('./routes/users');
+const edgeRoutes = require('./routes/edges');
+app.use(edgeRoutes);
+
 app.use('/api', require('./routes/api'));
 app.use('/api', require('./routes/nodes'));
 app.use('/', require('./routes/nodes'));
 app.use(flash());
-
-
-  
-  // Requiring  model
-  const User = require('./models/usermodel');
-  
-  
-  const userRoutes = require('./routes/users');
-  app.use(userRoutes);
 
 //HANDLE CLIENT-SIDE ROUTING
 app.get('*', (req, res) => {

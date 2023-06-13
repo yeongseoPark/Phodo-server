@@ -5,7 +5,7 @@ const imageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  thumb_url: {
+  thumbnailUrl: {
     type: String,
     required: true,
   },
@@ -27,6 +27,6 @@ const imageSchema = new mongoose.Schema({
 const Image = mongoose.model('Image', imageSchema);
 
 module.exports = {
-  Image: Image,
-  imageSchema: imageSchema
+  Image,
+  imageSchema,
 };
