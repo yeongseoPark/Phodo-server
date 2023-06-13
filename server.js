@@ -19,10 +19,20 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 
-const PORT = 4000;
+const PORT = 3000;
 const app = express();
 
 dotenv.config({path : './.env'});
+
+// middleware for session
+app.use(session({
+  secret : 'Just a simple login/sign up application.',
+  resave : true,
+  saveUninitialized : true
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
 // npm install : dotenv, path, express, mongoose, cookieParser
@@ -52,27 +62,19 @@ app.use(cookieParser()); // Parses cookies attached to the client request object
 // SERVE STATIC FILES
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
+
+
+// Requiring user model
+const User = require('./models/usermodel');
+
+
+const userRoutes = require('./routes/users');
+app.use(userRoutes);
+
 // ROUTES
 // const userRoutes = require('./routes/users');
 app.use('/api', require('./routes/api'));
 app.use(flash());
-
-// middleware for session
-app.use(session({
-    secret : 'Just a simple login/sign up application.',
-    resave : true,
-    saveUninitialized : true
-  }));
-  
-  app.use(passport.initialize());
-  app.use(passport.session());
-  
-  // Requiring user model
-  const User = require('./models/usermodel');
-  
-  
-  const userRoutes = require('./routes/users');
-  app.use(userRoutes);
 
 //HANDLE CLIENT-SIDE ROUTING
 app.get('*', (req, res) => {

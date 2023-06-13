@@ -9,6 +9,10 @@ const imageSchema = new mongoose.Schema({
     type: Array,
     required: true,
   },
+  thumbnailUrl: {
+    type: String,
+    required: true,
+  },
 });
 
 const Image = mongoose.model('Image', imageSchema);

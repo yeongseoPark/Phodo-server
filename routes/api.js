@@ -46,7 +46,6 @@ router.post('/upload', (req, res) => {
     });
 
     // 이미지 업로드 완료 처리(2) : 업로드 완료 시 (스트림이 모든 데이터를 업로드 한 후)
-    // 이미지 업로드 완료 처리(2) : 업로드 완료 시 (스트림이 모든 데이터를 업로드 한 후)
 stream.on('finish', async () => {
     // 업로드한 이미지 url 생성
     const imageUrl = `https://storage.googleapis.com/jungle_project/${gcsFileName}`;
@@ -58,7 +57,7 @@ stream.on('finish', async () => {
     // sharp를 사용해 이미지 사이즈 변경
     const resizedFileName = `thumbnail_${gcsFileName}`;
     const resizedFilePath = `/tmp/${resizedFileName}`;
-    await sharp(tmpFilePath).resize(50).toFile(resizedFilePath);
+    await sharp(tmpFilePath).resize(50).toFile(resizedFilePath); // resize() 인자로 크기 조정
 
     // 리사이징한 이미지를 다시 업로드
     const resizedFile = bucket.file(resizedFileName);
@@ -117,22 +116,34 @@ router.get('/gallery', async (req, res) => {
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
-        const imageUrls = images.map((image) => image.url);
+        const thumbnailUrls = images.map((image) => image.thumbnailUrl);
         const imageTags = images.map((image) => image.tags); 
 
         // 성공 시
-        res.status(200).json({ url: imageUrls, tags: imageTags }); 
+        res.status(200).json({ url: thumbnailUrls, tags: imageTags }); 
     } catch (err) {  // 실패 시
       console.error(err);
       res.status(500).json({ error: 'Failed to fetch image URLs and Tags' });
     } 
 });
 
-/* ----------------- dohee : 작성 중ing... ------------------ */
 // 갤러리로 태그별 이미지 전송 라우트 핸들러
-router.get('/galleryTags', async (req, res) => {
+router.get('/galleryTags/:tag', async (req, res) => {
     try {
-        // mongoDB에서 tag별 이미지 파일 가져오기
+        // 로그인한 사용자의 식별자 & 사용자가 요청한 태그 가져오기
+        const userId = req.user._id;
+        const tag = req.params.tag;
+
+        // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
+        const imagesQuery = Image.find({ owner: userId, tags: tag }, 'url tags');  // find 메서드의 결과로 쿼리가 생성됨
+        const images = await imagesQuery.exec();  //해당 쿼리를 실행
+        
+        // url과 tags를 배열 형식으로 추출
+        const thumbnailUrls = images.map((image) => image.thumbnailUrl);
+        const imageTags = images.map((image) => image.tags);    
+        
+        // 성공 시
+        res.status(200).json({ url: thumbnailUrls, tags: imageTags }); 
         
     } catch (err) {
         console.error(err);
