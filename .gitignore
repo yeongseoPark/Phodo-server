@@ -1,5 +1,5 @@
 node_modules/
-./.env
-./hyeontest-388510-6a65bba5d8ca.json
-./rich-wavelet-388908-dad58487deb3.json
-./npm-debug.log
+.env
+hyeontest-388510-6a65bba5d8ca.json
+rich-wavelet-388908-dad58487deb3.json
+npm-debug.log
