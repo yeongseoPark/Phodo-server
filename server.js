@@ -24,6 +24,16 @@ const app = express();
 
 dotenv.config({path : './.env'});
 
+// middleware for session
+app.use(session({
+  secret : 'Just a simple login/sign up application.',
+  resave : true,
+  saveUninitialized : true
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
 // npm install : dotenv, path, express, mongoose, cookieParser
 const fileUpload = require('express-fileupload');
@@ -57,15 +67,7 @@ app.use(express.static(path.join(__dirname, '../client/dist')));
 app.use('/api', require('./routes/api'));
 app.use(flash());
 
-// middleware for session
-app.use(session({
-    secret : 'Just a simple login/sign up application.',
-    resave : true,
-    saveUninitialized : true
-  }));
-  
-  app.use(passport.initialize());
-  app.use(passport.session());
+
   
   // Requiring user model
   const User = require('./models/usermodel');
