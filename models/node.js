@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
-const imageSchema = require('./image');
+const { Image, imageSchema } = require('../models/image');
 
 const nodeSchema = new mongoose.Schema({
+  node_id : {
+    type : Number,
+    required : true,
+  }
+  ,
   imageObj: {
     type : imageSchema,
-    require : false,
+    required : false,
   },
   location: {
     type : {
@@ -17,6 +22,14 @@ const nodeSchema = new mongoose.Schema({
         required : true
     }
   },
+  width : {
+    type : Number,
+    required : true,
+  },
+  height : {
+    type : Number,
+    required : true,
+  }, 
   memo : {
     type : String,
     required : false,
