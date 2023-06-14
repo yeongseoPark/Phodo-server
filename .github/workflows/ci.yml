@@ -24,6 +24,8 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+    - name: Delete unnecessary folders
+      run: rm -rf node_modules package-lock.json
     - name: Install dependencies
       run: npm install
     - name: Start the server
