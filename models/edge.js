@@ -2,11 +2,11 @@ const mongoose = require('mongoose');
 
 const EdgeSchema = mongoose.Schema({
     source: {
-        type: Number,
+        type: mongoose.Schema.Types.ObjectId,
         required: true
     },
     target: {
-        type: Number,
+        type: mongoose.Schema.Types.ObjectId,
         required: true
     }
 });
