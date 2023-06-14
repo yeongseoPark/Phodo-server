@@ -1,4 +1,3 @@
-// Edge Model
 const mongoose = require('mongoose');
 
 const EdgeSchema = mongoose.Schema({

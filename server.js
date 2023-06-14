@@ -19,7 +19,7 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 
-const PORT = 3000;
+const PORT = 4000;
 const app = express();
 
 dotenv.config({path : './.env'});
@@ -80,6 +80,7 @@ const projectRoutes = require('./routes/projects');
 app.use(projectRoutes);
 
 app.use('/api', require('./routes/api'));
+app.use('', require('./routes/nodes'));
 app.use(flash());
 
 //HANDLE CLIENT-SIDE ROUTING
