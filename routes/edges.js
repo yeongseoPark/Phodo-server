@@ -2,32 +2,47 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/usermodel'); // Requiring user model
 const Edge = require('../models/edge');
+const Project = require('../models/project');
 
 // Create
 router.post('/edges', async (req, res) => {
-    const edgeList = req.body.edges;
-    for (let i = 0; i < edgeList.length; i++) {
-        let edgeCurr = edgeList[i];
-        let edge = new Edge({
-            edgeId: edgeCurr.id,
-            source: edgeCurr.source,
-            target: edgeCurr.target
-        });
-        try {
-            const savedEdge = await edge.save();
-        } catch (err) {
-            res.json({ message: err });
-            return;
-        }
-    }
-    res.status(200).json({ message: 'Edge succesfully saved.' });
-    
 });
 
-// Read
-router.get('/edges', async (req, res) => {
+// Save
+router.post('/edges/:projectId', async (req, res) => {
+    const edgeList = req.body.edges;
+    const projectId = req.params.projectId;
+
     try {
-        const edges = await Edge.find();
+        // Delete all existing edges
+        await Edge.deleteMany({ projectId : projectId });
+
+        for (let i = 0; i < edgeList.length; i++) {
+            let edgeCurr = edgeList[i];
+            let edge = new Edge({
+                projectId: projectId,
+                source: edgeCurr.source,
+                target: edgeCurr.target
+            });
+
+            try {
+                const savedEdge = await edge.save();
+            } catch (err) {
+                res.status(500).json({ message: 'Error while saving an edge: ' + err });
+                return;
+            }
+        }
+        res.status(200).json({ message: 'Edges successfully saved.'});
+    } catch (err) {
+        res.status(500).json({ message: 'Error while deleting existing edges: ' + err });
+    }
+});
+
+// projectId에 해당하는 모든 edge를 배열에 담아서 반환
+router.get('/edges/:projectId', async (req, res) => {
+    const projectId = req.params.projectId;
+    try {
+        const edges = await Edge.find({ projectId : projectId });
         res.json(edges);
     } catch (err) {
         res.json({ message: err });
