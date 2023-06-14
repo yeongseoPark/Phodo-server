@@ -8,42 +8,70 @@
 const path = require('path');
 const express = require('express'); 
 const mongoose = require('mongoose');
-const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const session = require('express-session');
+
+const MongoDBStore = require('connect-mongodb-session');
+const mongoStore = MongoDBStore(session);
 
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const flash = require('connect-flash');
-const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
+const cookieParser = require('cookie-parser');
+
+// Requiring user model
+const User = require('./models/usermodel');
+
+passport.use(new LocalStrategy({
+  usernameField: 'email',   
+  passwordField: 'password',   
+}, async (email, password, done) => {
+  try {
+    const exUser = await User.findOne({ email: email });
+    if (exUser) {
+      exUser.authenticate(password, (err, user, passwordError) => {
+        if (passwordError) {
+          // Incorrect password
+          done(null, false, {message : '비밀번호가 일치하지 않습니다'});
+        } else if (err) {
+          // Other error
+          done(err);
+        } else {
+          // Success
+          done(null, user);
+        }
+      });
+    } else {
+      done(null, false, {message : '가입되지 않은 회원입니다'})
+    }
+  } catch (error) {
+    console.error(error);
+    done(error);
+  }
+}));
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 const PORT = 4000;
 const app = express();
 
+app.use(cookieParser())
+
 dotenv.config({path : './.env'});
 
-// middleware for session
-app.use(session({
-  secret : 'Just a simple login/sign up application.',
-  resave : true,
-  saveUninitialized : true
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-/*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
-// npm install : dotenv, path, express, mongoose, cookieParser
-const fileUpload = require('express-fileupload');
-app.use(fileUpload());
-
-app.use(cors());
+const store = new mongoStore({
+  collection: "userSessions",
+  uri: process.env.mongoURI,
+  expires: 1000,
+});
 
 // CORS 옵션 설정
 const corsOptions = {
-  origin: '*', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
+  origin: 'http://localhost:3000', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
   allowedHeaders: 'Content-Type',  
   credentials : true
@@ -52,21 +80,40 @@ const corsOptions = {
 // CORS 미들웨어를 사용하여 모든 경로에 대해 CORS 옵션 적용
 app.use(cors(corsOptions));
 
+// middleware for session
+app.use(
+  session({
+    name: "SESSION_NAME",
+    secret: "SESS_SECRET",
+    // store: store,
+    saveUninitialized: false,
+    resave: false,
+    cookie: {
+      sameSite: false,
+      secure: false,
+      httpOnly: true,
+    },
+  })
+);
+
+app.use(passport.session());
+app.use(passport.initialize());
+
+/*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
+// npm install : dotenv, path, express, mongoose, cookieParser
+const fileUpload = require('express-fileupload');
+app.use(fileUpload());
+
+
+
 /*-------------------------------------------------------------------*/
 
 // PARSE ALL REQUESTS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // Parses cookies attached to the client request object
 
 // SERVE STATIC FILES
 app.use(express.static(path.join(__dirname, '../client/dist')));
-
-
-
-// Requiring user model
-const User = require('./models/usermodel');
-
 
 const userRoutes = require('./routes/users');
 app.use(userRoutes);
@@ -81,7 +128,6 @@ app.use(projectRoutes);
 
 app.use('/api', require('./routes/api'));
 app.use('', require('./routes/nodes'));
-app.use(flash());
 
 //HANDLE CLIENT-SIDE ROUTING
 app.get('*', (req, res) => {
@@ -89,47 +135,9 @@ app.get('*', (req, res) => {
 });
 
 // passport.use(new LocalStrategy({usernameField : 'email'}, User.authenticate()));
-
-passport.use(new LocalStrategy({
-    usernameField: 'email',   
-    passwordField: 'password',   
-  }, async (email, password, done) => {
-    try {
-      const exUser = await User.findOne({ email: email });
-      if (exUser) {
-        exUser.authenticate(password, (err, user, passwordError) => {
-          if (passwordError) {
-            // Incorrect password
-            done(null, false, {message : '비밀번호가 일치하지 않습니다'});
-          } else if (err) {
-            // Other error
-            done(err);
-          } else {
-            // Success
-            done(null, user);
-          }
-        });
-      } else {
-        done(null, false, {message : '가입되지 않은 회원입니다'})
-      }
-    } catch (error) {
-      console.error(error);
-      done(error);
-    }
-  }));
-  
-  
-  /* passport는 현재 로그인한 유저에 대한 세션을 유지
-  밑의 2개의 라인으로 그 세션을 유지할 수 있음
-  - 유저가 dashboard에 접근할수 있게 하려면(세션을 기반으로)
-  serialize/ deserialize로 이를 가능케 함(??)
-  */
-  passport.serializeUser(User.serializeUser());
-  passport.deserializeUser(User.deserializeUser());
   
 // UNKNOWN ROUTE HANDLER
 app.use((req, res) => res.status(404).send('404 Not Found'));
-app.use(flash());
 
 // // setting middleware globally
 // app.use((req, res, next) => {
@@ -142,6 +150,7 @@ app.use(flash());
 
 // GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
+  console.error(err.stack);
   const defaultErr = {
     log: 'Express error handler caught unknown middleware error',
     status: 400,
