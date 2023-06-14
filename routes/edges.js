@@ -28,7 +28,7 @@ router.post('/edges/:projectId', async (req, res) => {
         // projectId에 해당하는 프로젝트를 찾아서 그의 edgeId 배열을 edgeIds로 교체
         const project = await Project.findById(projectId);
         
-        const oldEdgeIds = project.edgeId;
+        const oldEdgeIds = project.edgeIds;
         for (let oldEdgeId of oldEdgeIds) {
             await Edge.findByIdAndDelete(oldEdgeId);
         } 
