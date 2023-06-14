@@ -4,64 +4,63 @@ const User = require('../models/usermodel'); // Requiring user model
 const Edge = require('../models/edge');
 const Project = require('../models/project');
 
-// Create
-router.post('/edges', async (req, res) => {
-});
-
 // Save
 router.post('/edges/:projectId', async (req, res) => {
-    const edgeList = req.body.edges;
     const projectId = req.params.projectId;
+    const edges = req.body.edges;
 
     try {
-        // Delete all existing edges
-        await Edge.deleteMany({ projectId : projectId });
+        // edges 배열의 각 엣지에 대해 MongoDB에 새 Edge를 생성하고, 그 _id를 edgeIds 배열에 추가
+        const edgeIds = [];
+        for (let edge of edges) {
+            const newEdge = new Edge({
+                source: edge.source,
+                target: edge.target
+        });
+        try {
+            const savedEdge = await newEdge.save();
+            edgeIds.push(savedEdge._id);
+        } catch (err) {
+            console.error(`Failed to save edge: ${err}`);
+        // Choose how to handle this error: rethrow, continue, etc.
+    }
+}
+        // projectId에 해당하는 프로젝트를 찾아서 그의 edgeId 배열을 edgeIds로 교체
+        const project = await Project.findById(projectId);
+        
+        const oldEdgeIds = project.edgeId;
+        for (let oldEdgeId of oldEdgeIds) {
+            await Edge.findByIdAndDelete(oldEdgeId);
+        } 
 
-        for (let i = 0; i < edgeList.length; i++) {
-            let edgeCurr = edgeList[i];
-            let edge = new Edge({
-                projectId: projectId,
-                source: edgeCurr.source,
-                target: edgeCurr.target
-            });
+        project.edgeId = edgeIds;
+        await project.save();
 
-            try {
-                const savedEdge = await edge.save();
-            } catch (err) {
-                res.status(500).json({ message: 'Error while saving an edge: ' + err });
-                return;
-            }
-        }
-        res.status(200).json({ message: 'Edges successfully saved.'});
+        res.json(project);
     } catch (err) {
-        res.status(500).json({ message: 'Error while deleting existing edges: ' + err });
+        res.json({ message: err });
     }
 });
+
 
 // projectId에 해당하는 모든 edge를 배열에 담아서 반환
 router.get('/edges/:projectId', async (req, res) => {
-    const projectId = req.params.projectId;
     try {
-        const edges = await Edge.find({ projectId : projectId });
-        res.json(edges);
+        const projectId = req.params.projectId;
+        // find the project with the given projectId
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({message: "No project found with the provided ID."});
+        }
+
+        // get the edges using the edgeId array in the project
+        const edges = await Edge.find({_id: {$in: project.edgeId}});
+        res.status(200).json(edges);
     } catch (err) {
-        res.json({ message: err });
+        res.status(500).json({message: err});
     }
 });
 
-
-// Update
-router.patch('/edges/:id', async (req, res) => {
-    try {
-        const updatedEdge = await Edge.updateOne(
-            { edgeId: req.params.id },
-            { $set: {source: req.body.source, target: req.body.target} }
-        );
-        res.json(updatedEdge);
-    } catch (err) {
-        res.json({ message: err });
-    }
-});
 
 // Delete
 router.delete('/edges/:edgeId', async (req, res) => {

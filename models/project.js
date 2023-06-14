@@ -12,12 +12,10 @@ let projectSchema = new mongoose.Schema({
   }],
   nodeId : [{
     type : mongoose.Schema.Types.ObjectId,
-    required : true,
     ref : 'Node',
   }],
   edgeId : [{
     type : mongoose.Schema.Types.ObjectId,
-    required : true,
     ref : 'Edge',
   }],
 });
