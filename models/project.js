@@ -5,21 +5,19 @@ let projectSchema = new mongoose.Schema({
     type : String,
     required : false,
   },
-  userId : { // user와 2-Way
+  userId : [{ // user와 2-Way
     type : mongoose.Schema.Types.ObjectId,
     required : true,
     ref : 'User',
-  },
-  nodeId : {
+  }],
+  nodeId : [{
     type : mongoose.Schema.Types.ObjectId,
-    required : true,
     ref : 'Node',
-  },
-  edgeId : {
+  }],
+  edgeId : [{
     type : mongoose.Schema.Types.ObjectId,
-    required : true,
     ref : 'Edge',
-  },
+  }],
 });
 
 const Project = mongoose.model('Project', projectSchema);

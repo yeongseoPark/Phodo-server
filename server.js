@@ -76,6 +76,9 @@ app.use(userRoutes);
 const edgeRoutes = require('./routes/edges');
 app.use(edgeRoutes);
 
+const projectRoutes = require('./routes/projects');
+app.use(projectRoutes);
+
 app.use('/api', require('./routes/api'));
 app.use('', require('./routes/nodes'));
 app.use(flash());
