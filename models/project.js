@@ -5,6 +5,10 @@ let projectSchema = new mongoose.Schema({
   //   type: Number,
   //   required: false,
   // },
+  name : {
+    type : String,
+    required : false
+  },
   userIds: [{ // 1 Project : Many Users
     type: mongoose.Schema.Types.ObjectId,
     required: true,
