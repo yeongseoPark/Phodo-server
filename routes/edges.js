@@ -33,7 +33,7 @@ router.post('/edges/:projectId', async (req, res) => {
             await Edge.findByIdAndDelete(oldEdgeId);
         } 
 
-        project.edgeId = edgeIds;
+        project.edgeIds = edgeIds;
         await project.save();
 
         res.json(project);
@@ -41,7 +41,6 @@ router.post('/edges/:projectId', async (req, res) => {
         res.json({ message: err });
     }
 });
-
 
 // projectId에 해당하는 모든 edge를 배열에 담아서 반환
 router.get('/edges/:projectId', async (req, res) => {
@@ -54,21 +53,10 @@ router.get('/edges/:projectId', async (req, res) => {
         }
 
         // get the edges using the edgeId array in the project
-        const edges = await Edge.find({_id: {$in: project.edgeId}});
+        const edges = await Edge.find({_id: {$in: project.edgeIds}});
         res.status(200).json(edges);
     } catch (err) {
         res.status(500).json({message: err});
-    }
-});
-
-
-// Delete
-router.delete('/edges/:edgeId', async (req, res) => {
-    try {
-        const removedEdge = await Edge.findOneAndDelete({ edgeId: req.params.edgeId });
-        res.json(removedEdge);
-    } catch (err) {
-        res.json({ message: err });
     }
 });
 
