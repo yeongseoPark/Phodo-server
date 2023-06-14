@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const { Storage } = require('@google-cloud/storage');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
-const Image = require('../models/image');   // 이미지 모델 정의
+const { Image } = require('../models/image');   // 이미지 모델 정의
 const sharp = require('sharp'); // image resizing to make thumbnail
 
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
@@ -95,7 +95,7 @@ router.post('/upload', (req, res) => {
                 url: imageUrl, 
                 tags: imageTags,
                 thumbnailUrl: thumbnailUrl,
-                owner: userId, // 소유자 정보 할당
+                userId: userId, // 소유자 정보 할당
             });
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
@@ -121,7 +121,7 @@ router.get('/gallery', async (req, res) => {
         const userId = req.user._id;
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
-        const imagesQuery = Image.find({ owner : userId }, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({ userId : userId }, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
@@ -154,7 +154,7 @@ router.get('/galleryTags', async (req, res) => {
         const tag = req.body.tags;
 
         // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
-        const imagesQuery = Image.find({ owner: userId, tags: {$in:tag} }, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({ userId: userId, tags: {$in:tag} }, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
