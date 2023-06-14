@@ -2,11 +2,11 @@ const mongoose = require('mongoose');
 const { Image, imageSchema } = require('../models/image');
 
 const nodeSchema = new mongoose.Schema({
-  node_id : {
-    type : Number,
-    required : true,
-  }
-  ,
+  // node_id : {
+  //   type : Number,
+  //   required : true,
+  // }
+  // ,
   imageObj: {
     type : imageSchema,
     required : false,
