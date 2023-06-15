@@ -63,35 +63,48 @@ app.use(cookieParser())
 
 dotenv.config({path : './.env'});
 
-const store = new mongoStore({
-  collection: "userSessions",
-  uri: process.env.mongoURI,
-  expires: 1000,
-});
+
 
 // CORS 옵션 설정
 const corsOptions = {
   origin: 'http://localhost:3000', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
-  allowedHeaders: 'Content-Type',  
+  allowedHeaders:  [
+    "Content-Type",
+    "Content-Length",
+    "Accept-Encoding",
+    "X-CSRF-Token",
+    "Authorization",
+    "accept",
+    "origin",
+    "Cache-Control",
+    "X-Requested-With"
+  ],  
   credentials : true
 };
 
 // CORS 미들웨어를 사용하여 모든 경로에 대해 CORS 옵션 적용
 app.use(cors(corsOptions));
 
+const store = new mongoStore({
+  collection: "userSessions",
+  uri: process.env.mongoURI,
+  expires: 1000,
+});
+
 // middleware for session
 app.use(
   session({
     name: "SESSION_NAME",
     secret: "SESS_SECRET",
-    // store: store,
+    store: store,
     saveUninitialized: false,
     resave: false,
     cookie: {
-      sameSite: false,
+      sameSite: 'lax',
       secure: false,
       httpOnly: true,
+      maxAge : (4 * 60 * 60 * 1000)
     },
   })
 );

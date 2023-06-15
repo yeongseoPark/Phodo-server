@@ -4,7 +4,11 @@ const path = require('path');
 const { Storage } = require('@google-cloud/storage');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const { Image } = require('../models/image');   // 이미지 모델 정의
-const sharp = require('sharp'); // image resizing to make thumbnail
+const sharp = require('sharp'); // image resizing to make 
+const fs = require('fs'); // 파일 시스템 모듈
+
+
+const passport = require('passport');
 
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
 // 이미지 업로드 및 URL 저장에 필요한 모듈 임포트 (npm install @google-cloud/storage, npm install @google-cloud/vision)
@@ -26,7 +30,7 @@ const storage = new Storage({
 router.post('/upload', (req, res) => {
     // 클라이언트로부터 이미지 파일 받기
     const image = req.files.image;
-    console.log('imageInfo: \n', image);
+    console.log(image);
 
     // 이미지 파일 업로드
     const bucket = storage.bucket('jungle_project');    // Cloud Storage 버킷 이름(jungle_project)
@@ -84,18 +88,29 @@ router.post('/upload', (req, res) => {
             // 중복값 제거
             const imageTagsSet = new Set(Tags);
             const imageTags = [...imageTagsSet];
-            
+
+            // 이미지 메타데이터에서 시간 값 추출
+            const imageTime_proto = fs.statSync(tmpFilePath).mtime;
+            const imageTime = [
+                imageTime_proto.toISOString().slice(0, 10),
+                imageTime_proto.toISOString().slice(11, 19)
+              ];
+
             console.log('imageUrl: ', imageUrl);
             console.log('imageTags: ', imageTags);
             console.log('thumbnailUrl: ', thumbnailUrl);
+            console.log('imageTime:', imageTime);
 
             // MongoDB에 이미지 URL과 태그 저장
-            const userId = req.user._id; // 현재 로그인한 사용자의 식별자 가져오기
+            // const userId = req.session.id; // 현재 로그인한 사용자의 식별자 가져오기
+            // const userId = req.user.id; // 현재 로그인한 사용자의 식별자 가져오기
+            // console.log(userId);
             const imageDocument = new Image({ 
                 url: imageUrl, 
                 tags: imageTags,
                 thumbnailUrl: thumbnailUrl,
-                userId: userId, // 소유자 정보 할당
+                time: imageTime
+                // userId: userId, // 소유자 정보 할당
             });
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
@@ -108,7 +123,6 @@ router.post('/upload', (req, res) => {
         }
     });    
 
-
     // 이미지 파일 스트림 종료 및 업로드 완료
     // end 메서드 : 스트림을 종료하고 작업을 완료, image.data : 이미지 데이터 자체.
     stream.end(image.data);
@@ -118,10 +132,12 @@ router.post('/upload', (req, res) => {
 router.get('/gallery', async (req, res) => {
     try {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
+        console.log(req.user)
         const userId = req.user._id;
+        console.log("여기 " + userId)
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
-        const imagesQuery = Image.find({ userId : userId }, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({}, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
@@ -134,9 +150,10 @@ router.get('/gallery', async (req, res) => {
                 tag3: image.tags[2],
                 tag4: image.tags[3]
             },
-            thumbnailUrl: image.thumbnailUrl
+            thumbnailUrl: image.thumbnailUrl,
+            time: image.time
         }));
-        console.log(imageUrlsTags);
+        // console.log(imageUrlsTags);
 
         // 성공 시
         res.status(200).json(imageUrlsTags); 
@@ -147,14 +164,14 @@ router.get('/gallery', async (req, res) => {
 });
 
 // 갤러리로 태그별 이미지 전송 라우트 핸들러
-router.get('/galleryTags', async (req, res) => {
+router.post('/galleryTags', async (req, res) => {
     try {
         // 로그인한 사용자의 식별자 & 사용자가 요청한 태그 가져오기
-        const userId = req.user._id;
+        // const userId = req.user;
         const tag = req.body.tags;
 
         // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
-        const imagesQuery = Image.find({ userId: userId, tags: {$in:tag} }, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({ tags: {$in:tag} }, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
@@ -167,7 +184,8 @@ router.get('/galleryTags', async (req, res) => {
                 tag3: image.tags[2],
                 tag4: image.tags[3]
             },
-            thumbnailUrl: image.thumbnailUrl
+            thumbnailUrl: image.thumbnailUrl,
+            time: image.time
         }));   
         
         // 성공 시
