@@ -7,11 +7,11 @@ let userScheme = new mongoose.Schema({
   email : String,
   resetPasswordToken : String,
   resetPasswordExpires : Date,
-  projectId : {
+  projectId : [{
     type : mongoose.Schema.Types.ObjectId,
     required : false,
     ref : 'Project',
-  }
+  }]
 });
 
 userScheme.plugin(passportLocalMongoose, {usernameField : 'email'});

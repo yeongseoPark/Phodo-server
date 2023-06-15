@@ -18,11 +18,17 @@ router.post('/project', async (req, res) => {
 
     try {
         const savedProject = await newProject.save();
+        
+        const user = await User.findById(userId);
+        user.projectId.push(savedProject._id);
+        await user.save();
+
         res.status(200).json(savedProject);
     } catch (err) {
         res.status(500).json({ message: err });
     }
 });
+
 
 // Rename project
 router.patch('/project/:projectId', async (req, res) => {
@@ -50,6 +56,7 @@ router.patch('/project/:projectId', async (req, res) => {
 // Delete project
 router.delete('/project/:projectId', async (req, res) => {
     const projectId = req.params.projectId;
+    const userId = req.user._id;
 
     try {
         // Find the project by projectId
@@ -59,23 +66,29 @@ router.delete('/project/:projectId', async (req, res) => {
         }
 
         // Loop through nodeId array and delete each node
-        for (let nodeId of project.nodeId) {
+        for (let nodeId of project.nodeIds) {
             await Node.findByIdAndDelete(nodeId);
         }
 
         // Loop through edgeId array and delete each edge
-        for (let edgeId of project.edgeId) {
+        for (let edgeId of project.edgeIds) {
             await Edge.findByIdAndDelete(edgeId);
         }
 
         // Finally, delete the project
         await Project.findByIdAndDelete(projectId);
+        
+        // Remove the project's id from the user's projectId array
+        const user = await User.findById(userId);
+        user.projectId = user.projectId.filter(id => !id.equals(projectId));
+        await user.save();
 
-        res.status(200).json({ message: 'Project, its nodes and edges were successfully deleted.' });
+        res.status(200).json({ message: 'Project, its nodes, edges and reference from user were successfully deleted.' });
     } catch (err) {
         res.status(500).json({ message: err });
     }
 });
+
 
 
 module.exports = router;
