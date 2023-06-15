@@ -25,6 +25,8 @@ const cookieParser = require('cookie-parser');
 // Requiring user model
 const User = require('./models/usermodel');
 
+const app = express();
+
 passport.use(new LocalStrategy({
   usernameField: 'email',   
   passwordField: 'password',   
@@ -40,6 +42,7 @@ passport.use(new LocalStrategy({
           // Other error
           done(err);
         } else {
+          console.log("전략 유저" + user)
           // Success
           done(null, user);
         }
@@ -53,25 +56,44 @@ passport.use(new LocalStrategy({
   }
 }));
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
-
-const PORT = 4000;
-const app = express();
-
-app.use(cookieParser())
-
-dotenv.config({path : './.env'});
-
 const store = new mongoStore({
   collection: "userSessions",
   uri: process.env.mongoURI,
   expires: 1000,
 });
 
+// middleware for session
+app.use(
+  session({
+    name: "SESSION_NAME",
+    secret: "SESS_SECRET",
+    store: store,
+    saveUninitialized: false,
+    resave: false,
+    cookie: {
+      sameSite: 'none',
+      secure: false,
+      httpOnly: true,
+      maxAge : (4 * 60 * 60 * 1000) 
+    },
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+const PORT = 4000;
+
+app.use(cookieParser())
+
+dotenv.config({path : './.env'});
+
+
 // CORS 옵션 설정
 const corsOptions = {
-  origin: 'http://localhost:3000', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
+  origin: 'http://172.31.191.50:3000', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
   allowedHeaders: [
     "Content-Type",
@@ -90,24 +112,7 @@ const corsOptions = {
 // CORS 미들웨어를 사용하여 모든 경로에 대해 CORS 옵션 적용
 app.use(cors(corsOptions));
 
-// middleware for session
-app.use(
-  session({
-    name: "SESSION_NAME",
-    secret: "SESS_SECRET",
-    // store: store,
-    saveUninitialized: false,
-    resave: false,
-    cookie: {
-      sameSite: false,
-      secure: false,
-      httpOnly: true,
-    },
-  })
-);
 
-app.use(passport.session());
-app.use(passport.initialize());
 
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
 // npm install : dotenv, path, express, mongoose, cookieParser

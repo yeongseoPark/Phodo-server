@@ -118,7 +118,9 @@ router.post('/upload', (req, res) => {
 router.get('/gallery', async (req, res) => {
     try {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
+        console.log(req.user)
         const userId = req.user._id;
+        console.log("여기 " + userId)
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
         const imagesQuery = Image.find({ userId : userId }, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨

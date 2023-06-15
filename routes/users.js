@@ -173,10 +173,13 @@ router.post('/login', (req, res, next) => {
         return next(err);
       }
       // 로그인 성공 시 사용자 정보를 응답에 추가하고 성공 메시지를 전송합니다.
-      return res.status(200).json({
+      res.status(200).json({
         message: 'Login succeeded',
         user: user
       });
+
+      console.log("로그인시 유저!!!" + req.user);
+      return;
     });
 
   })(req, res, next); // 이 함수에 req, res, next를 전달합니다.
