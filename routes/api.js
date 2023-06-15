@@ -6,12 +6,35 @@ const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const { Image } = require('../models/image');   // 이미지 모델 정의
 const sharp = require('sharp'); // image resizing to make 
 const fs = require('fs'); // 파일 시스템 모듈
-
+const exifParser = require('exif-parser');
 
 const passport = require('passport');
 
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
 // 이미지 업로드 및 URL 저장에 필요한 모듈 임포트 (npm install @google-cloud/storage, npm install @google-cloud/vision)
+
+// 이미지 파일에서 촬영 시간을 읽는 함수
+async function getImageCreationTime(filePath) {
+    try {
+        const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
+        const parser = exifParser.create(fileData); // Exif 파서 생성
+        const result = parser.parse(); // Exif 데이터 파싱
+
+        // "CreateDate" 필드가 Exif 데이터에 있는지 확인
+        if (result.tags && result.tags.CreateDate) {
+            const date = new Date(result.tags.CreateDate * 1000); // Exif 태그는 Unix 시간으로 저장됨 (초 단위), 자바스크립트는 밀리초 단위로 처리하므로 변환 필요
+            return date.toISOString().slice(0,19); // '2020-02-21T14:33:16' 형식의 날짜와 시간 문자열 반환
+        } else {
+            // Exif 데이터가 없다면 파일의 생성 시간을 반환
+            const stat = fs.statSync(filePath);
+            return stat.birthtime.toISOString().slice(0,19);
+        }
+    } catch (error) {
+        console.error(`Failed to read Exif data: ${error}`);
+        return null;
+    }
+}
+
 
 // Google Vision API 클라이언트 생성 및 인증 정보 설정
 const vision = new ImageAnnotatorClient({
@@ -30,7 +53,7 @@ const storage = new Storage({
 router.post('/upload', (req, res) => {
     // 클라이언트로부터 이미지 파일 받기
     const image = req.files.image;
-    console.log(image);
+    // console.log(image);
 
     // 이미지 파일 업로드
     const bucket = storage.bucket('jungle_project');    // Cloud Storage 버킷 이름(jungle_project)
@@ -89,17 +112,17 @@ router.post('/upload', (req, res) => {
             const imageTagsSet = new Set(Tags);
             const imageTags = [...imageTagsSet];
 
-            // 이미지 메타데이터에서 시간 값 추출
-            const imageTime_proto = fs.statSync(tmpFilePath).mtime;
-            const imageTime = [
-                imageTime_proto.toISOString().slice(0, 10),
-                imageTime_proto.toISOString().slice(11, 19)
-              ];
+            // Exif 데이터에서 촬영 시간 가져오기
+            const imageCreationTime = await getImageCreationTime(tmpFilePath);
+            if (!imageCreationTime) { // Exif 데이터에서 촬영 시간을 가져오지 못했을 때의 처리
+                res.status(500).json({ error: 'Failed to read image creation time from Exif data' });
+                return;
+            }
 
             console.log('imageUrl: ', imageUrl);
             console.log('imageTags: ', imageTags);
             console.log('thumbnailUrl: ', thumbnailUrl);
-            console.log('imageTime:', imageTime);
+            console.log('imageTime:', imageCreationTime);
 
             // MongoDB에 이미지 URL과 태그 저장
             // const userId = req.session.id; // 현재 로그인한 사용자의 식별자 가져오기
@@ -109,7 +132,7 @@ router.post('/upload', (req, res) => {
                 url: imageUrl, 
                 tags: imageTags,
                 thumbnailUrl: thumbnailUrl,
-                time: imageTime
+                time: imageCreationTime
                 // userId: userId, // 소유자 정보 할당
             });
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
