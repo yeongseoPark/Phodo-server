@@ -36,9 +36,9 @@ router.post('/edges/:projectId', async (req, res) => {
         project.edgeIds = edgeIds;
         await project.save();
 
-        res.json(project);
+        res.status(200).json(project);
     } catch (err) {
-        res.json({ message: err });
+        res.status(500).json({ message: err });
     }
 });
 
