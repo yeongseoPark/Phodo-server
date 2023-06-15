@@ -53,7 +53,8 @@ passport.use(new LocalStrategy({
   }
 }));
 
-
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 const PORT = 4000;
 const app = express();
@@ -62,17 +63,13 @@ app.use(cookieParser())
 
 dotenv.config({path : './.env'});
 
-const store = new mongoStore({
-  collection: "userSessions",
-  uri: process.env.mongoURI,
-  expires: 1000,
-});
+
 
 // CORS 옵션 설정
 const corsOptions = {
   origin: 'http://localhost:3000', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
-  allowedHeaders: [
+  allowedHeaders:  [
     "Content-Type",
     "Content-Length",
     "Accept-Encoding",
@@ -82,25 +79,32 @@ const corsOptions = {
     "origin",
     "Cache-Control",
     "X-Requested-With"
-  ],
+  ],  
   credentials : true
 };
 
 // CORS 미들웨어를 사용하여 모든 경로에 대해 CORS 옵션 적용
 app.use(cors(corsOptions));
 
+const store = new mongoStore({
+  collection: "userSessions",
+  uri: process.env.mongoURI,
+  expires: 1000,
+});
+
 // middleware for session
 app.use(
   session({
     name: "SESSION_NAME",
     secret: "SESS_SECRET",
-    // store: store,
+    store: store,
     saveUninitialized: false,
     resave: false,
     cookie: {
       sameSite: false,
       secure: false,
       httpOnly: true,
+      maxAge : (4 * 60 * 60 * 1000)
     },
   })
 );
@@ -108,23 +112,6 @@ app.use(
 app.use(passport.session());
 app.use(passport.initialize());
 
-
-passport.serializeUser((user, done) => {
-  console.log(user.id);
-  done(null, user.id);
-});
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findOne({
-      // 프론트에서 cookie를 보내면, 서버는 메모리에서 cookie와 관련된 id를 찾은 뒤 DB에서 user 정보를 불러옴.
-      where: { id },
-    });
-    return done(null, user); // 불러온 user 정보는 req.user에 저장
-  } catch (e) {
-    console.error(e);
-    return done(e);
-  }
-});
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
 // npm install : dotenv, path, express, mongoose, cookieParser
 const fileUpload = require('express-fileupload');
