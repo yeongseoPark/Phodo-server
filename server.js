@@ -101,7 +101,7 @@ app.use(
     saveUninitialized: false,
     resave: false,
     cookie: {
-      sameSite: false,
+      sameSite: 'lax',
       secure: false,
       httpOnly: true,
       maxAge : (4 * 60 * 60 * 1000)
