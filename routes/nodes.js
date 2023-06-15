@@ -208,7 +208,7 @@ router.get('/nodes/:projectId', async function(req, res, next) {
             };
         });
 
-        res.status(200).json(nodesWithTransformedImageObj);
+        res.status(200).json({'node' : nodesWithTransformedImageObj});
     } catch(err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });

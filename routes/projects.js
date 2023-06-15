@@ -23,7 +23,7 @@ router.post('/project', async (req, res) => {
         user.projectId.push(savedProject._id);
         await user.save();
 
-        res.status(200).json(savedProject);
+        res.status(200).json({ "id" : savedProject._id});
     } catch (err) {
         res.status(500).json({ message: err });
     }
@@ -47,7 +47,7 @@ router.patch('/project/:projectId', async (req, res) => {
             return res.status(404).json({ message: 'Project not found.' });
         }
 
-        res.status(200).json(project);
+        res.status(200).json({ "id" : project._id});
     } catch (err) {
         res.status(500).json({ message: err });
     }
