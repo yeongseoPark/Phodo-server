@@ -53,7 +53,7 @@ const storage = new Storage({
 router.post('/upload', (req, res) => {
     // 클라이언트로부터 이미지 파일 받기
     const image = req.files.image;
-    // console.log(image);
+    console.log(image);
 
     // 이미지 파일 업로드
     const bucket = storage.bucket('jungle_project');    // Cloud Storage 버킷 이름(jungle_project)
@@ -118,7 +118,7 @@ router.post('/upload', (req, res) => {
                 res.status(500).json({ error: 'Failed to read image creation time from Exif data' });
                 return;
             }
-
+        
             console.log('imageUrl: ', imageUrl);
             console.log('imageTags: ', imageTags);
             console.log('thumbnailUrl: ', thumbnailUrl);
@@ -132,13 +132,13 @@ router.post('/upload', (req, res) => {
                 url: imageUrl, 
                 tags: imageTags,
                 thumbnailUrl: thumbnailUrl,
-                time: imageCreationTime
+                time: imageTime
                 // userId: userId, // 소유자 정보 할당
             });
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
             // 성공 시 : 상태코드 200과 성공 메세지 전
-            res.status(200).json({ message: 'Image and thumbnail uploaded and URL saved' });
+            res.status(200).json({ message: 'Image and thumbnail uploaded and URL saved', imageTags});
 
         } catch (err) {  // 실패 시 : 상태코드 500과 에러 메세지 전달
             console.error(err);
@@ -156,8 +156,7 @@ router.get('/gallery', async (req, res) => {
     try {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
         console.log(req.user)
-        const userId = req.user._id;
-        console.log("여기 " + userId)
+        // const userId = req.user._id;
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
         const imagesQuery = Image.find({}, '_id url tags thumbnailUrl');  // find 메서드의 결과로 쿼리가 생성됨
@@ -174,9 +173,9 @@ router.get('/gallery', async (req, res) => {
                 tag4: image.tags[3]
             },
             thumbnailUrl: image.thumbnailUrl,
-            time: image.time
+            time: `${image.time}`
         }));
-        // console.log(imageUrlsTags);
+        console.log(imageUrlsTags);
 
         // 성공 시
         res.status(200).json(imageUrlsTags); 
