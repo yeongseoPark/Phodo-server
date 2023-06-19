@@ -7,7 +7,6 @@ const { Image } = require('../models/image');   // 이미지 모델 정의
 const sharp = require('sharp'); // image resizing to make 
 const fs = require('fs'); // 파일 시스템 모듈
 const exifParser = require('exif-parser');
-const fs = require('fs').promises;
 
 const passport = require('passport');
 
