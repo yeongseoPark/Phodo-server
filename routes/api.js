@@ -159,8 +159,9 @@ router.get('/gallery', async (req, res) => {
         // const userId = req.user._id;
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
-        const imagesQuery = Image.find({}, '_id url tags thumbnailUrl time');  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({});  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
+        console.log(images);
         // url과 tags를 배열 형식으로 추출
         const imageUrlsTags = images.map((image) => ({
             _id: image._id,
