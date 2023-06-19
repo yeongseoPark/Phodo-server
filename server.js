@@ -126,7 +126,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // SERVE STATIC FILES
-app.use(express.static(path.join(__dirname, '../client/dist')));
+// 클라이언트 서버 분리해서 이제 필요 없음.
+// app.use(express.static(path.join(__dirname, '../client/dist')));
 
 const userRoutes = require('./routes/users');
 app.use(userRoutes);
