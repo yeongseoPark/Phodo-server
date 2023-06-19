@@ -7,6 +7,7 @@ const { Image } = require('../models/image');   // 이미지 모델 정의
 const sharp = require('sharp'); // image resizing to make 
 const fs = require('fs'); // 파일 시스템 모듈
 const exifParser = require('exif-parser');
+const fs = require('fs').promises;
 
 const passport = require('passport');
 
@@ -160,10 +161,15 @@ router.post('/upload', (req, res) => {
             }
         
             // Exif 데이터에서 장소 정보 가져오기
-            const imageLocation = await getImageLocation(tmpFilePath);
-            if (!imageLocation) {
-                res.status(500).json({ error: 'Failed to read image location from Exif data' });
-                return;
+            let imageLocation = await getImageLocation(tmpFilePath);
+            if (!imageCreationTime) {
+                try {
+                    const stats = await fs.stat(tmpFilePath);
+                    imageCreationTime = stats.birthtime;
+                } catch (error) {
+                    res.status(500).json({ error: 'Failed to read file creation time' });
+                    return;
+                }
             }
 
             // MongoDB에 이미지 URL과 태그 저장
