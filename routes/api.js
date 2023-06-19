@@ -132,7 +132,7 @@ router.post('/upload', (req, res) => {
                 url: imageUrl, 
                 tags: imageTags,
                 thumbnailUrl: thumbnailUrl,
-                time: imageTime
+                time: imageCreationTime
                 // userId: userId, // 소유자 정보 할당
             });
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
@@ -172,7 +172,7 @@ router.get('/gallery', async (req, res) => {
                 tag4: image.tags[3]
             },
             thumbnailUrl: image.thumbnailUrl,
-            time: `${image.time}`
+            time: image.time
         }));
         console.log(imageUrlsTags);
 
