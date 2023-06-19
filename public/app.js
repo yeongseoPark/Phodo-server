@@ -1,7 +1,11 @@
 // script.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io();
+    const socket = io("http://localhost:4000", { transports: ['websocket'] }); // 주소 그때그때바꿔줘야함
+    socket.on('connect_error', (err) => {
+      console.log(`Connect error due to ${err.message}`);
+    });
+    
   
     // Get DOM elements
     const roomInput = document.getElementById('room');
@@ -94,10 +98,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       peerConnection.ontrack = (event) => {
+        
         const audio = document.createElement('audio');
         audio.srcObject = event.streams[0];
         audio.controls = true;  // Add this line
         audio.autoplay = true;
+        console.log(audio)
         document.body.appendChild(audio);
       };
   
