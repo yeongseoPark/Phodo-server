@@ -188,6 +188,8 @@ mongoose.connect(process.env.MONGO_URI, {
   .catch(err => console.log(err));
 
 // SERVER LISTEN
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server started on port ${PORT}`);
+// });
+
+module.exports = app;

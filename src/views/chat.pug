@@ -1,0 +1,17 @@
+
+doctype html
+html(lang='en')
+  head
+    title WebRTC Audio Chat
+    link(rel='stylesheet', href='/public/style.css')
+  body
+    header
+      h1 WebRTC Audio Chat
+    main
+      input#room(type='text', placeholder='Enter room name')
+      input#nickname(type='text', placeholder='Enter your nickname')
+      button#join Join Room
+      ul#members
+      div#controls
+    script(src="/socket.io/socket.io.js")
+    script(src="./app.js")
