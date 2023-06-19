@@ -22,6 +22,11 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const cookieParser = require('cookie-parser');
 
+const PORT = 4000;
+const app = express();
+
+app.use(cookieParser())
+
 // Requiring user model
 const User = require('./models/usermodel');
 
@@ -55,11 +60,6 @@ passport.use(new LocalStrategy({
 
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
-
-const PORT = 4000;
-const app = express();
-
-app.use(cookieParser())
 
 dotenv.config({path : './.env'});
 
