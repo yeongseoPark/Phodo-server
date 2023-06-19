@@ -1,7 +1,7 @@
 // script.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io("http://localhost:4000", { transports: ['websocket'] }); // 주소 그때그때바꿔줘야함
+    const socket = io("https://hyeontae.shop", { transports: ['websocket'] }); // 주소 그때그때바꿔줘야함
     socket.on('connect_error', (err) => {
       console.log(`Connect error due to ${err.message}`);
     });
