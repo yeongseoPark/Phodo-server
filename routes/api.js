@@ -216,7 +216,8 @@ router.get('/gallery', async (req, res) => {
                 tag4: image.tags[3]
             },
             thumbnailUrl: image.thumbnailUrl,
-            time: image.time
+            time: image.time,
+            location: image.location
         }));
         // console.log(imageUrlsTags);
 
@@ -236,7 +237,7 @@ router.post('/galleryTags', async (req, res) => {
         const tag = req.body.tags;
 
         // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
-        const imagesQuery = Image.find({ tags: {$in:tag} }, '_id url tags thumbnailUrl time');  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({ tags: {$in:tag} });  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
@@ -250,8 +251,9 @@ router.post('/galleryTags', async (req, res) => {
                 tag4: image.tags[3]
             },
             thumbnailUrl: image.thumbnailUrl,
-            time: image.time
-        }));   
+            time: image.time,
+            location: image.location
+        }));
         
         // 성공 시
         res.status(200).json(imageUrlsTags); 

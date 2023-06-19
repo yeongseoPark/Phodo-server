@@ -153,7 +153,7 @@ app.get('*', (req, res) => {
 app.use((req, res) => res.status(404).send('404 Not Found'));
 
 app.get('/healthy', (req, res) => {
-  res.status(200);
+  res.status(200).end();
 });
 
 // // setting middleware globally
