@@ -126,7 +126,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // SERVE STATIC FILES
-app.use(express.static(path.join(__dirname, '../client/dist')));
+// app.use(express.static(path.join(__dirname, '../client/dist')));
 
 const userRoutes = require('./routes/users');
 app.use(userRoutes);
@@ -151,6 +151,10 @@ app.get('*', (req, res) => {
   
 // UNKNOWN ROUTE HANDLER
 app.use((req, res) => res.status(404).send('404 Not Found'));
+
+app.get('/healthy', (req, res) => {
+  res.status(200);
+});
 
 // // setting middleware globally
 // app.use((req, res, next) => {

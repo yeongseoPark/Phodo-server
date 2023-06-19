@@ -10,9 +10,6 @@ const exifParser = require('exif-parser');
 
 const passport = require('passport');
 
-/*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
-// 이미지 업로드 및 URL 저장에 필요한 모듈 임포트 (npm install @google-cloud/storage, npm install @google-cloud/vision)
-
 // 이미지 파일에서 촬영 시간을 읽는 함수
 async function getImageCreationTime(filePath) {
     try {
@@ -35,6 +32,49 @@ async function getImageCreationTime(filePath) {
     }
 }
 
+// 이미지 파일에서 GPS 정보를 읽는 함수
+async function getImageLocation(filePath) {
+    try {
+        const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
+        const parser = exifParser.create(fileData); // Exif 파서 생성
+        const result = parser.parse(); // Exif 데이터 파싱
+
+        // "GPSLatitude"와 "GPSLongitude" 필드가 Exif 데이터에 있는지 확인
+        if (
+            result.tags &&
+            result.tags.GPSLatitude &&
+            result.tags.GPSLongitude &&
+            result.tags.GPSLatitudeRef &&
+            result.tags.GPSLongitudeRef
+        ) {
+            const latitude = convertDMSToDD(result.tags.GPSLatitude, result.tags.GPSLatitudeRef);
+            const longitude = convertDMSToDD(result.tags.GPSLongitude, result.tags.GPSLongitudeRef);
+            return { latitude, longitude };
+        } else {
+            // Exif 데이터에 GPS 정보가 없을 경우 null 반환
+            return null;
+        }
+    } catch (error) {
+        console.error(`Failed to read GPS data from Exif: ${error}`);
+        return null;
+    }
+}
+
+// Exif GPS 좌표 형식(DMS)을 십진수 형식(DD)으로 변환하는 함수
+function convertDMSToDD(dmsArray, ref) {
+    const degrees = dmsArray[0];
+    const minutes = dmsArray[1];
+    const seconds = dmsArray[2];
+    const direction = ref.toUpperCase();
+  
+    let dd = degrees + minutes / 60 + seconds / (60 * 60);
+  
+    if (direction === 'S' || direction === 'W') {
+        dd = -dd;
+    }
+  
+    return dd;
+}
 
 // Google Vision API 클라이언트 생성 및 인증 정보 설정
 const vision = new ImageAnnotatorClient({
@@ -82,9 +122,9 @@ router.post('/upload', (req, res) => {
         await file.download({ destination: tmpFilePath });
         
         // sharp를 사용해 이미지 사이즈 변경
-        const resizedFileName = `thumbnail_${gcsFileName}`;
+        const resizedFileName = `umbnail_${gcsFileName}`;
         const resizedFilePath = `/tmp/${resizedFileName}`;
-        await sharp(tmpFilePath).resize(50).toFile(resizedFilePath); // resize() 인자로 크기 조정
+        await sharp(tmpFilePath).thresize(50).toFile(resizedFilePath); // resize() 인자로 크기 조정
 
         // 리사이징한 이미지를 다시 업로드
         const resizedFile = bucket.file(resizedFileName);
@@ -119,10 +159,12 @@ router.post('/upload', (req, res) => {
                 return;
             }
         
-            // console.log('imageUrl: ', imageUrl);
-            // console.log('imageTags: ', imageTags);
-            // console.log('thumbnailUrl: ', thumbnailUrl);
-            // console.log('imageTime:', imageCreationTime);
+            // Exif 데이터에서 장소 정보 가져오기
+            const imageLocation = await getImageLocation(tmpFilePath);
+            if (!imageLocation) {
+                res.status(500).json({ error: 'Failed to read image location from Exif data' });
+                return;
+            }
 
             // MongoDB에 이미지 URL과 태그 저장
             // const userId = req.session.id; // 현재 로그인한 사용자의 식별자 가져오기
@@ -132,7 +174,8 @@ router.post('/upload', (req, res) => {
                 url: imageUrl, 
                 tags: imageTags,
                 thumbnailUrl: thumbnailUrl,
-                time: imageCreationTime
+                time: imageCreationTime,
+                location: imageLocation,
                 // userId: userId, // 소유자 정보 할당
             });
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
@@ -161,7 +204,7 @@ router.get('/gallery', async (req, res) => {
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
         const imagesQuery = Image.find({});  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
-        console.log(images);
+        // console.log(images);
         // url과 tags를 배열 형식으로 추출
         const imageUrlsTags = images.map((image) => ({
             _id: image._id,
