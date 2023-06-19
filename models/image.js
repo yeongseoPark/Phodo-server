@@ -22,6 +22,10 @@ const imageSchema = new mongoose.Schema({
     type : Date,
     required : true,
   },
+  location : {
+    type : String,
+    required : true
+  },
 });
 
 const Image = mongoose.model('Image', imageSchema);

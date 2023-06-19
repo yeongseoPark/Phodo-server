@@ -7,11 +7,9 @@ const { Image } = require('../models/image');   // 이미지 모델 정의
 const sharp = require('sharp'); // image resizing to make 
 const fs = require('fs'); // 파일 시스템 모듈
 const exifParser = require('exif-parser');
+const fs = require('fs').promises;
 
 const passport = require('passport');
-
-/*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
-// 이미지 업로드 및 URL 저장에 필요한 모듈 임포트 (npm install @google-cloud/storage, npm install @google-cloud/vision)
 
 // 이미지 파일에서 촬영 시간을 읽는 함수
 async function getImageCreationTime(filePath) {
@@ -35,6 +33,49 @@ async function getImageCreationTime(filePath) {
     }
 }
 
+// 이미지 파일에서 GPS 정보를 읽는 함수
+async function getImageLocation(filePath) {
+    try {
+        const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
+        const parser = exifParser.create(fileData); // Exif 파서 생성
+        const result = parser.parse(); // Exif 데이터 파싱
+
+        // "GPSLatitude"와 "GPSLongitude" 필드가 Exif 데이터에 있는지 확인
+        if (
+            result.tags &&
+            result.tags.GPSLatitude &&
+            result.tags.GPSLongitude &&
+            result.tags.GPSLatitudeRef &&
+            result.tags.GPSLongitudeRef
+        ) {
+            const latitude = convertDMSToDD(result.tags.GPSLatitude, result.tags.GPSLatitudeRef);
+            const longitude = convertDMSToDD(result.tags.GPSLongitude, result.tags.GPSLongitudeRef);
+            return { latitude, longitude };
+        } else {
+            // Exif 데이터에 GPS 정보가 없을 경우 null 반환
+            return null;
+        }
+    } catch (error) {
+        console.error(`Failed to read GPS data from Exif: ${error}`);
+        return null;
+    }
+}
+
+// Exif GPS 좌표 형식(DMS)을 십진수 형식(DD)으로 변환하는 함수
+function convertDMSToDD(dmsArray, ref) {
+    const degrees = dmsArray[0];
+    const minutes = dmsArray[1];
+    const seconds = dmsArray[2];
+    const direction = ref.toUpperCase();
+  
+    let dd = degrees + minutes / 60 + seconds / (60 * 60);
+  
+    if (direction === 'S' || direction === 'W') {
+        dd = -dd;
+    }
+  
+    return dd;
+}
 
 // Google Vision API 클라이언트 생성 및 인증 정보 설정
 const vision = new ImageAnnotatorClient({
@@ -82,7 +123,7 @@ router.post('/upload', (req, res) => {
         await file.download({ destination: tmpFilePath });
         
         // sharp를 사용해 이미지 사이즈 변경
-        const resizedFileName = `thumbnail_${gcsFileName}`;
+        const resizedFileName = `umbnail_${gcsFileName}`;
         const resizedFilePath = `/tmp/${resizedFileName}`;
         await sharp(tmpFilePath).resize(50).toFile(resizedFilePath); // resize() 인자로 크기 조정
 
@@ -119,10 +160,17 @@ router.post('/upload', (req, res) => {
                 return;
             }
         
-            console.log('imageUrl: ', imageUrl);
-            console.log('imageTags: ', imageTags);
-            console.log('thumbnailUrl: ', thumbnailUrl);
-            console.log('imageTime:', imageCreationTime);
+            // Exif 데이터에서 장소 정보 가져오기
+            let imageLocation = await getImageLocation(tmpFilePath);
+            if (!imageCreationTime) {
+                try {
+                    const stats = await fs.stat(tmpFilePath);
+                    imageCreationTime = stats.birthtime;
+                } catch (error) {
+                    res.status(500).json({ error: 'Failed to read file creation time' });
+                    return;
+                }
+            }
 
             // MongoDB에 이미지 URL과 태그 저장
             // const userId = req.session.id; // 현재 로그인한 사용자의 식별자 가져오기
@@ -132,7 +180,8 @@ router.post('/upload', (req, res) => {
                 url: imageUrl, 
                 tags: imageTags,
                 thumbnailUrl: thumbnailUrl,
-                time: imageTime
+                time: imageCreationTime,
+                location: imageLocation,
                 // userId: userId, // 소유자 정보 할당
             });
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
@@ -155,12 +204,13 @@ router.post('/upload', (req, res) => {
 router.get('/gallery', async (req, res) => {
     try {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
-        console.log(req.user)
+        // console.log(req.user)
         // const userId = req.user._id;
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
-        const imagesQuery = Image.find({}, '_id url tags thumbnailUrl time');  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({});  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
+        // console.log(images);
         // url과 tags를 배열 형식으로 추출
         const imageUrlsTags = images.map((image) => ({
             _id: image._id,
@@ -172,9 +222,10 @@ router.get('/gallery', async (req, res) => {
                 tag4: image.tags[3]
             },
             thumbnailUrl: image.thumbnailUrl,
-            time: `${image.time}`
+            time: image.time,
+            location: image.location
         }));
-        console.log(imageUrlsTags);
+        // console.log(imageUrlsTags);
 
         // 성공 시
         res.status(200).json(imageUrlsTags); 
@@ -192,7 +243,7 @@ router.post('/galleryTags', async (req, res) => {
         const tag = req.body.tags;
 
         // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
-        const imagesQuery = Image.find({ tags: {$in:tag} }, '_id url tags thumbnailUrl time');  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({ tags: {$in:tag} });  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
@@ -206,8 +257,9 @@ router.post('/galleryTags', async (req, res) => {
                 tag4: image.tags[3]
             },
             thumbnailUrl: image.thumbnailUrl,
-            time: image.time
-        }));   
+            time: image.time,
+            location: image.location
+        }));
         
         // 성공 시
         res.status(200).json(imageUrlsTags); 
