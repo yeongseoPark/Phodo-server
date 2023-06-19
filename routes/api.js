@@ -124,7 +124,7 @@ router.post('/upload', (req, res) => {
         // sharp를 사용해 이미지 사이즈 변경
         const resizedFileName = `umbnail_${gcsFileName}`;
         const resizedFilePath = `/tmp/${resizedFileName}`;
-        await sharp(tmpFilePath).thresize(50).toFile(resizedFilePath); // resize() 인자로 크기 조정
+        await sharp(tmpFilePath).resize(50).toFile(resizedFilePath); // resize() 인자로 크기 조정
 
         // 리사이징한 이미지를 다시 업로드
         const resizedFile = bucket.file(resizedFileName);
