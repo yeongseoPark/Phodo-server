@@ -109,6 +109,27 @@ router.get('/project/:newUserEmail/:projectId', async(req, res) => {
     }
 })
 
+// get project
+router.get('/project', async (req, res) => {
+    const userId = req.user._id;  // 요청한 유저의 ID 가져오기
+
+    try {
+        // Project 테이블에서 userIds에 userId를 포함하는 프로젝트를 모두 찾음
+        const projects = await Project.find({ userIds: userId });
+        
+        // 각 프로젝트의 _id와 name만 추출
+        const projectNamesAndIds = projects.map(project => ({
+            _id: project._id,
+            name: project.name
+        }));
+
+        // 결과 반환
+        res.status(200).json(projectNamesAndIds);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Rename project
 router.patch('/project/:projectId', async (req, res) => {
     const projectId = req.params.projectId;
