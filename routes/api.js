@@ -172,8 +172,8 @@ router.post('/upload', (req, res) => {
             }
 
             // MongoDB에 이미지 URL과 태그 저장
-            // const userId = req.session.id; // 현재 로그인한 사용자의 식별자 가져오기
-            // const userId = req.user.id; // 현재 로그인한 사용자의 식별자 가져오기
+            // const userId = req.session.id; // 세션 id는 로그아웃하고 다시 로그인하면 재설정됨
+            const userId = req.user._id; // 현재 로그인한 사용자의 식별자 가져오기
             // console.log(userId);
             const imageDocument = new Image({ 
                 url: imageUrl, 
@@ -181,7 +181,7 @@ router.post('/upload', (req, res) => {
                 thumbnailUrl: thumbnailUrl,
                 time: imageCreationTime,
                 location: imageLocation,
-                // userId: userId, // 소유자 정보 할당
+                userId: userId, // 소유자 정보 할당
             });
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
@@ -201,15 +201,12 @@ router.post('/upload', (req, res) => {
 
 // 갤러리로 전체 이미지 전송 라우트 핸들러
 router.get('/gallery', async (req, res) => {
+    const userId = req.user._id;
     try {
-        // 세션에서 현재 로그인한 사용자의 식별자 가져오기
-        // console.log(req.user)
-        // const userId = req.user._id;
+        // mongoDB에서 로그인한 사용자가 업로드한 이미지의 url과 tag 가져오기 
+        const imagesQuery = Image.find({userId: userId});  // find 메서드의 결과로 쿼리가 생성됨
+        const images = await imagesQuery.exec();  // 해당 쿼리를 실행
 
-        // mongoDB에서 이미지 파일 url과 tag 가져오기 
-        const imagesQuery = Image.find({});  // find 메서드의 결과로 쿼리가 생성됨
-        const images = await imagesQuery.exec();  //해당 쿼리를 실행
-        // console.log(images);
         // url과 tags를 배열 형식으로 추출
         const imageUrlsTags = images.map((image) => ({
             _id: image._id,
@@ -224,7 +221,6 @@ router.get('/gallery', async (req, res) => {
             time: image.time,
             location: image.location
         }));
-        // console.log(imageUrlsTags);
 
         // 성공 시
         res.status(200).json(imageUrlsTags); 
@@ -234,15 +230,14 @@ router.get('/gallery', async (req, res) => {
     } 
 });
 
+
 // 갤러리로 태그별 이미지 전송 라우트 핸들러
 router.post('/galleryTags', async (req, res) => {
+    const userId = req.user._id;
+    const tag = req.body.tags;
     try {
-        // 로그인한 사용자의 식별자 & 사용자가 요청한 태그 가져오기
-        // const userId = req.user;
-        const tag = req.body.tags;
-
-        // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
-        const imagesQuery = Image.find({ tags: {$in:tag} });  // find 메서드의 결과로 쿼리가 생성됨
+        // mongoDB에서 로그인한 사용자가 업로드한 이미지 중 요청한 태그를 가진 것만 추출
+        const imagesQuery = Image.find({userId: userId, tags: {$in:tag}});  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
@@ -266,6 +261,25 @@ router.post('/galleryTags', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch image URLs and Tags'})
+    }
+});
+
+// 이미지 삭제
+router.delete('/imageDelete/:imageId', async (req, res) => {
+    const imageId = req.params.imageId;
+    try {
+        // 해당 id의 이미지 찾아서 삭제
+        const deleteResult = await Image.deleteOne({_id: imageId});
+        if (deleteResult.deletedCount === 0) {
+            // 이미지가 없거나 이미 삭제된 경우
+            res.status(404).json({ error: 'Image not found or already deleted' });
+        } else {
+            // 성공 시
+            res.status(200).json({ success: true });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to delete image' });
     }
 });
 
