@@ -12,9 +12,9 @@ router.post('/project', async (req, res) => {
     // 새 프로젝트 생성
     const newProject = new Project({
         name: name,
-        userId: [userId],
-        nodeId: [],
-        edgeId: []
+        userIds: [userId],
+        nodeIds: [],
+        edgeIds: []
     });
 
     try {
