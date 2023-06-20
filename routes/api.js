@@ -7,8 +7,10 @@ const { Image } = require('../models/image');   // 이미지 모델 정의
 const sharp = require('sharp'); // image resizing to make 
 const fs = require('fs'); // 파일 시스템 모듈
 const exifParser = require('exif-parser');
+const piexif = require('piexifjs'); // 이미지의 exif 데이터를 읽고 쓰는데 사용
 
 const passport = require('passport');
+const { default: axios } = require('axios');
 
 // 이미지 파일에서 촬영 시간을 읽는 함수
 async function getImageCreationTime(filePath) {
@@ -36,19 +38,14 @@ async function getImageCreationTime(filePath) {
 async function getImageLocation(filePath) {
     try {
         const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
-        const parser = exifParser.create(fileData); // Exif 파서 생성
-        const result = parser.parse(); // Exif 데이터 파싱
-
+        const exifData = piexif.load(fileData.toString("binary"));
+        const gpsData = exifData['GPS'];
+        
+        // 이미지에 GPS 관련 정보가 있는지 확인
         // "GPSLatitude"와 "GPSLongitude" 필드가 Exif 데이터에 있는지 확인
-        if (
-            result.tags &&
-            result.tags.GPSLatitude &&
-            result.tags.GPSLongitude &&
-            result.tags.GPSLatitudeRef &&
-            result.tags.GPSLongitudeRef
-        ) {
-            const latitude = convertDMSToDD(result.tags.GPSLatitude, result.tags.GPSLatitudeRef);
-            const longitude = convertDMSToDD(result.tags.GPSLongitude, result.tags.GPSLongitudeRef);
+        if (gpsData && gpsData[piexif.GPSIFD.GPSLatitude] && gpsData[piexif.GPSIFD.GPSLongitude]) {
+            const latitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLatitude], gpsData[piexif.GPSIFD.GPSLatitudeRef]);
+            const longitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLongitude], gpsData[piexif.GPSIFD.GPSLongitudeRef]);
             return { latitude, longitude };
         } else {
             // Exif 데이터에 GPS 정보가 없을 경우 null 반환
@@ -61,11 +58,16 @@ async function getImageLocation(filePath) {
 }
 
 // Exif GPS 좌표 형식(DMS)을 십진수 형식(DD)으로 변환하는 함수
+// ex) 127° 18' 45" E 를 숫자(좌표)로 변환
 function convertDMSToDD(dmsArray, ref) {
-    const degrees = dmsArray[0];
-    const minutes = dmsArray[1];
-    const seconds = dmsArray[2];
+    const degrees = parseFloat(dmsArray[0]);
+    const minutes = parseFloat(dmsArray[1]);
+    const seconds = parseFloat(dmsArray[2]);
     const direction = ref.toUpperCase();
+  
+    if (isNaN(degrees) || isNaN(minutes) || isNaN(seconds)) {
+        throw new Error('Invalid DMS values');
+    }
   
     let dd = degrees + minutes / 60 + seconds / (60 * 60);
   
@@ -76,12 +78,25 @@ function convertDMSToDD(dmsArray, ref) {
     return dd;
 }
 
+// 카카오 지도 API로 현재 좌표를 행정구역단위(동)으로 변환
+const getAddressFromCoordinates = async (longitude, latitude) => {
+    try {
+        const response = await axios.get(
+            `https://dapi.kakao.com/v2/local/geo/coord2regioncode.json?x=${longitude}&y=${latitude}`,
+            { headers: { Authorization: `KakaoAK ${process.env.REACT_APP_KAKAO_MAP_KEY}` } }
+        );
+        const regionName = response.data.documents[0].address_name;
+        return regionName;
+    } catch (error) {
+        console.error('Failed to convert coordinates to address:', error);
+        return null;
+    }
+};
+
 // Google Vision API 클라이언트 생성 및 인증 정보 설정
 const vision = new ImageAnnotatorClient({
     keyFilename: path.join(__dirname, '../hyeontest-388510-6a65bba5d8ca.json'), // Vision API 인증 키 파일 경로 설정
-  });
-// const vision = require('@google-cloud/vision');
-// var requtil = vision.requtil;
+});
 
 // 구글 클라우드 스토리지 클라이언트 생성 및 인증 정보 설정
 const storage = new Storage({
@@ -160,15 +175,16 @@ router.post('/upload', (req, res) => {
             }
         
             // Exif 데이터에서 장소 정보 가져오기
-            let imageLocation = await getImageLocation(tmpFilePath);
-            if (!imageCreationTime) {
-                try {
-                    const stats = await fs.stat(tmpFilePath);
-                    imageCreationTime = stats.birthtime;
-                } catch (error) {
-                    res.status(500).json({ error: 'Failed to read file creation time' });
-                    return;
-                }
+            const imageLocation = await getImageLocation(tmpFilePath);
+
+            let longitude = null;
+            let latitude = null;
+            let address = null;
+
+            if (imageLocation) {
+                longitude = imageLocation.longitude;
+                latitude = imageLocation.latitude;
+                address = await getAddressFromCoordinates(longitude, latitude);
             }
 
             // MongoDB에 이미지 URL과 태그 저장
@@ -180,9 +196,11 @@ router.post('/upload', (req, res) => {
                 tags: imageTags,
                 thumbnailUrl: thumbnailUrl,
                 time: imageCreationTime,
-                location: imageLocation,
+                location: address,
                 // userId: userId, // 소유자 정보 할당
             });
+            console.log(imageDocument);
+            console.log(imageLocation);
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
             // 성공 시 : 상태코드 200과 성공 메세지 전
