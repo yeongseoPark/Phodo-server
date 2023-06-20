@@ -39,6 +39,7 @@
     "passport-local": "^1.0.0",
     "passport-local-mongoose": "^8.0.0",
     "path": "^0.12.7",
+    "piexifjs": "^1.0.6",
     "pug": "^3.0.2",
     "sharp": "^0.32.1",
     "socket.io": "^4.6.2",
