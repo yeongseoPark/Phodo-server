@@ -8,10 +8,11 @@ const nodemailer = require('nodemailer');
 
 // Create new project
 router.post('/project', async (req, res) => {
-    const name = req.body.name;
-    const userId = req.user._id;
-    console.log("유저" + userId)
 
+    const name = req.body.name; // body.name으로 새 프로젝트의 이름 받기
+    const userId = req.user._id; // 요청한 user의 id 받아오기
+
+    // 새 프로젝트 생성
     const newProject = new Project({
         name: name,
         userIds: [userId],
@@ -20,13 +21,13 @@ router.post('/project', async (req, res) => {
     });
 
     try {
-        const savedProject = await newProject.save();
+        const savedProject = await newProject.save(); // 새 프로젝트 DB에 저장
         
-        const user = await User.findById(userId);
-        user.projectId.push(savedProject._id);
-        await user.save();
+        const user = await User.findById(userId); 
+        user.projectId.push(savedProject._id); // user data에 새로 생성한 projectId 추가
+        await user.save(); 
 
-        res.status(200).json({ "id" : savedProject._id});
+        res.status(200).json({ "id" : savedProject._id}); // 클라이언트에 projectId 전달
     } catch (err) {
         res.status(500).json({ message: err });
     }
@@ -147,11 +148,12 @@ router.patch('/project/:projectId', async (req, res) => {
             return res.status(404).json({ message: 'Project not found.' });
         }
 
-        res.status(200).json({ "id" : project._id});
+        res.sendStatus(200); // Only send HTTP status code 200 on success
     } catch (err) {
         res.status(500).json({ message: err });
     }
 });
+
 
 // Delete project
 router.delete('/project/:projectId', async (req, res) => {
