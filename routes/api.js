@@ -38,11 +38,11 @@ async function getImageCreationTime(filePath) {
 async function getImageLocation(filePath) {
     try {
         const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
-        const exifData = piexif.load(fileData.toString("binary"));
-        const gpsData = exifData['GPS'];
+        const exifData = piexif.load(fileData.toString("binary"));  // fileData를 바이너리 형식으로 변환하고, 이미지 파일의 exif 데이터를 읽어 옴.
+        const gpsData = exifData['GPS'];  // GPS 관련 데이터 추출
         
-        // 이미지에 GPS 관련 정보가 있는지 확인
-        // "GPSLatitude"와 "GPSLongitude" 필드가 Exif 데이터에 있는지 확인
+        // GPS 관련 정보 (GPSLatitude, GPSLongitude)가 exif 데이터에 존재하는지 확인
+        // convertDMSToDD 함수로 GPS값을 DMS 형식에서 DD 형식으로 변환
         if (gpsData && gpsData[piexif.GPSIFD.GPSLatitude] && gpsData[piexif.GPSIFD.GPSLongitude]) {
             const latitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLatitude], gpsData[piexif.GPSIFD.GPSLatitudeRef]);
             const longitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLongitude], gpsData[piexif.GPSIFD.GPSLongitudeRef]);
@@ -59,18 +59,23 @@ async function getImageLocation(filePath) {
 
 // Exif GPS 좌표 형식(DMS)을 십진수 형식(DD)으로 변환하는 함수
 // ex) 127° 18' 45" E 를 숫자(좌표)로 변환
-function convertDMSToDD(dmsArray, ref) {
+function convertDMSToDD(dmsArray, ref) {  // dmsArray: DMS 형식 좌표값 배열, ref: 좌표의 방향
+    // 배열의 각 요소를 부동소수점 숫자로 변환
     const degrees = parseFloat(dmsArray[0]);
     const minutes = parseFloat(dmsArray[1]);
     const seconds = parseFloat(dmsArray[2]);
+
+    // ref 문자열을 대문자로 변환
     const direction = ref.toUpperCase();
-  
+
+    // 숫자 형식으로 변환할 수 없는 경우 error 반환
     if (isNaN(degrees) || isNaN(minutes) || isNaN(seconds)) {
         throw new Error('Invalid DMS values');
     }
-  
+    // 변환한 값을 DD 형식으로 다시 계산
     let dd = degrees + minutes / 60 + seconds / (60 * 60);
-  
+    
+    // 좌표값이 S 혹은 W 인 경우 좌표값을 음수로 변경
     if (direction === 'S' || direction === 'W') {
         dd = -dd;
     }
@@ -176,20 +181,19 @@ router.post('/upload', (req, res) => {
         
             // Exif 데이터에서 장소 정보 가져오기
             const imageLocation = await getImageLocation(tmpFilePath);
-
-            let longitude = null;
-            let latitude = null;
-            let address = null;
-
+            let address;
+            if (imageLocation == null) {
+                address = "" // 빈 문자열 설정
+            }
             if (imageLocation) {
-                longitude = imageLocation.longitude;
-                latitude = imageLocation.latitude;
+                let longitude = imageLocation.longitude;
+                let latitude = imageLocation.latitude;
                 address = await getAddressFromCoordinates(longitude, latitude);
             }
 
             // MongoDB에 이미지 URL과 태그 저장
-            // const userId = req.session.id; // 세션 id는 로그아웃하고 다시 로그인하면 재설정됨
-            const userId = req.user._id; // 현재 로그인한 사용자의 식별자 가져오기
+            // const userId = req.session.id; // 현재 로그인한 사용자의 식별자 가져오기
+            // const userId = req.user.id; // 현재 로그인한 사용자의 식별자 가져오기
             // console.log(userId);
             const imageDocument = new Image({ 
                 url: imageUrl, 
@@ -200,7 +204,6 @@ router.post('/upload', (req, res) => {
                 // userId: userId, // 소유자 정보 할당
             });
             console.log(imageDocument);
-            console.log(imageLocation);
             await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
             // 성공 시 : 상태코드 200과 성공 메세지 전
@@ -219,12 +222,15 @@ router.post('/upload', (req, res) => {
 
 // 갤러리로 전체 이미지 전송 라우트 핸들러
 router.get('/gallery', async (req, res) => {
-    const userId = req.user._id;
     try {
-        // mongoDB에서 로그인한 사용자가 업로드한 이미지의 url과 tag 가져오기 
-        const imagesQuery = Image.find({userId: userId});  // find 메서드의 결과로 쿼리가 생성됨
-        const images = await imagesQuery.exec();  // 해당 쿼리를 실행
+        // 세션에서 현재 로그인한 사용자의 식별자 가져오기
+        // console.log(req.user)
+        // const userId = req.user._id;
 
+        // mongoDB에서 이미지 파일 url과 tag 가져오기 
+        const imagesQuery = Image.find({});  // find 메서드의 결과로 쿼리가 생성됨
+        const images = await imagesQuery.exec();  //해당 쿼리를 실행
+        // console.log(images);
         // url과 tags를 배열 형식으로 추출
         const imageUrlsTags = images.map((image) => ({
             _id: image._id,
@@ -239,6 +245,7 @@ router.get('/gallery', async (req, res) => {
             time: image.time,
             location: image.location
         }));
+        // console.log(imageUrlsTags);
 
         // 성공 시
         res.status(200).json(imageUrlsTags); 
@@ -248,14 +255,15 @@ router.get('/gallery', async (req, res) => {
     } 
 });
 
-
 // 갤러리로 태그별 이미지 전송 라우트 핸들러
 router.post('/galleryTags', async (req, res) => {
-    const userId = req.user._id;
-    const tag = req.body.tags;
     try {
-        // mongoDB에서 로그인한 사용자가 업로드한 이미지 중 요청한 태그를 가진 것만 추출
-        const imagesQuery = Image.find({userId: userId, tags: {$in:tag}});  // find 메서드의 결과로 쿼리가 생성됨
+        // 로그인한 사용자의 식별자 & 사용자가 요청한 태그 가져오기
+        // const userId = req.user;
+        const tag = req.body.tags;
+
+        // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
+        const imagesQuery = Image.find({ tags: {$in:tag} });  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
@@ -279,25 +287,6 @@ router.post('/galleryTags', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch image URLs and Tags'})
-    }
-});
-
-// 이미지 삭제
-router.delete('/imageDelete/:imageId', async (req, res) => {
-    const imageId = req.params.imageId;
-    try {
-        // 해당 id의 이미지 찾아서 삭제
-        const deleteResult = await Image.deleteOne({_id: imageId});
-        if (deleteResult.deletedCount === 0) {
-            // 이미지가 없거나 이미 삭제된 경우
-            res.status(404).json({ error: 'Image not found or already deleted' });
-        } else {
-            // 성공 시
-            res.status(200).json({ success: true });
-        }
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to delete image' });
     }
 });
 
