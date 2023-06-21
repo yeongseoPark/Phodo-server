@@ -155,6 +155,7 @@ router.post('/upload', (req, res) => {
             // Google Cloud Vision API로 이미지 태그 생성
             const [result] = await vision.labelDetection(imageUrl);
             const labels = result.labelAnnotations;
+            console.log(labels);
             
             // 생성된 태그(labels)를 해당하는 카테고리로 변환해서 반환   
             const Tags = [];
@@ -167,6 +168,12 @@ router.post('/upload', (req, res) => {
                 if (value) {
                     Tags.push(value);
                 }
+                // 정확도가 0.8 이상이면 추가
+                if (label.score >= 0.7) {
+                    
+                    Tags.push(label.description.toLowerCase());
+                }    
+
             });
             // 중복값 제거
             const imageTagsSet = new Set(Tags);
@@ -232,19 +239,20 @@ router.get('/gallery', async (req, res) => {
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         // console.log(images);
         // url과 tags를 배열 형식으로 추출
-        const imageUrlsTags = images.map((image) => ({
-            _id: image._id,
-            url: image.url,
-            tags: {
-                tag1: image.tags[0],
-                tag2: image.tags[1],
-                tag3: image.tags[2],
-                tag4: image.tags[3]
-            },
-            thumbnailUrl: image.thumbnailUrl,
-            time: image.time,
-            location: image.location
-        }));
+        const imageUrlsTags = images.map((image) => {
+            const tags = {};
+            image.tags.forEach((tag, index) => {
+                tags[`tag${index +1}`] = tag;
+            });
+            return {
+                _id: image._id,
+                url: image.url,
+                tags,
+                thumbnailUrl: image.thumbnailUrl,
+                time: image.time,
+                location: image.location
+            };          
+        });
         // console.log(imageUrlsTags);
 
         // 성공 시

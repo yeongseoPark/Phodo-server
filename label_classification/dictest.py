@@ -30,7 +30,6 @@ target_category = [
 "vehicle",
 "food",
 "person",
-"tool",
 "building",
 "sports equipment",
 "furniture",
