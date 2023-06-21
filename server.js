@@ -24,11 +24,32 @@ const cookieParser = require('cookie-parser');
 const SocketIO = require("socket.io");
 const http = require("http");
 
+// CORS 옵션 설정
+const corsOptions = {
+  origin: 'chrome-extension://ophmdkgfcjapomjdpfobjfbihojchbko', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
+  methods: 'GET, POST',
+  allowedHeaders:  [
+    "Content-Type",
+    "Content-Length",
+    "Accept-Encoding",
+    "X-CSRF-Token",
+    "Authorization",
+    "accept",
+    "origin",
+    "Cache-Control",
+    "X-Requested-With"
+  ],  
+  credentials : true
+};
+
 const PORT = 4000;
 const app = express();
 
 const httpServer = http.createServer(app);
-const wsServer = SocketIO(httpServer);
+const wsServer = SocketIO(httpServer, {
+  cors : corsOptions
+});
+
 
 app.use(cookieParser())
 
@@ -67,26 +88,6 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 dotenv.config({path : './.env'});
-
-
-
-// CORS 옵션 설정
-const corsOptions = {
-  origin: 'http://3.36.77.22:3000', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
-  methods: 'GET, POST',
-  allowedHeaders:  [
-    "Content-Type",
-    "Content-Length",
-    "Accept-Encoding",
-    "X-CSRF-Token",
-    "Authorization",
-    "accept",
-    "origin",
-    "Cache-Control",
-    "X-Requested-With"
-  ],  
-  credentials : true
-};
 
 // CORS 미들웨어를 사용하여 모든 경로에 대해 CORS 옵션 적용
 app.use(cors(corsOptions));
@@ -226,7 +227,20 @@ let roomObjArr = [
 ];
 const MAXIMUM = 5;
 
-wsServer.on("connection", (socket) => {
+/* ---------- Redis ------------- */
+const redis = require('redis');
+const client =  redis.createClient({
+  socket: {
+      host: 'localhost', // ec2 상에서는 변경 필요
+      port: 6379 // default
+  }
+});
+client.on('error', err => console.log('Redis Server Error', err));
+/* ----------- Redis -------------- */
+
+wsServer.on("connection", async (socket) => {
+  await client.connect()
+
   let myRoomName = null;
   let myNickname = null;
 
@@ -313,6 +327,66 @@ wsServer.on("connection", (socket) => {
       roomObjArr = newRoomObjArr;
     }
   });
+
+  socket.on('yjs-update', async (update) => {
+
+    const projectId = Object.keys(update)[0]; // This will extract the first key in the 'update' object
+    const yjsDoc = update[projectId].yjsDoc;
+
+    const yjsDocToString = await JSON.stringify(yjsDoc);
+    await client.set(projectId, yjsDocToString, (err) => {
+        if (err) console.error(err);
+    })
+    // const projectId = Object.keys(update)[0]; // This will extract the first key in the 'update' object
+    // const yjsDoc = update[projectId].yjsDoc;
+
+    // /* Hset 사용하는 방식 -> nested 처리 안돼있음 */
+    // console.log(`yjsDoc[edge]: ${JSON.stringify(yjsDoc['edge'])}`);
+
+    // // Separate handling for nodes and edges
+    // ["node", "edge"].forEach(type => {
+    //     const items = yjsDoc[type];  // items is an array of nodes or edges
+
+    //     // Start a Redis MULTI transaction
+    //     const multi = client.multi();
+
+    //     items.forEach(item => {
+    //         console.log("아이템" + item)
+    //         // Key is something like "node:100" or "edge:e-107bottom-108top"
+    //         const key = `${type}:${item.id}`;
+
+    //         // Retrieve the existing item from Redis
+    //         client.hget(projectId, key, (err, existingItemString) => {
+    //             if (err) {
+    //                 console.error(err);
+    //                 // Send error message to the client
+    //                 socket.emit('yjs-update-result', { success: false, error: err });
+    //                 return;
+    //             }
+
+    //             const newItemString = JSON.stringify(item);
+
+    //             // Only update Redis if the item has changed
+    //             if (newItemString !== existingItemString) {
+    //                 // Add the HSET command to the MULTI transaction
+    //                 multi.hset(projectId, key, newItemString);
+    //             }
+    //         });
+    //     });
+
+    //     // Execute the MULTI transaction
+    //       multi.exec((err, replies) => {
+    //           if (err) {
+    //               console.error(err);
+    //               // Send error message to the client
+    //               socket.emit('yjs-update-result', { success: false, error: err });
+    //           } else {
+    //               // Send success message to the client
+    //               socket.emit('yjs-update-result', { success: true });
+    //           }
+    //       });
+    //   });
+  });
 });
 
 // SERVER LISTEN
@@ -323,4 +397,4 @@ wsServer.on("connection", (socket) => {
 httpServer.listen(PORT,() => {
     console.log(`Server started on port ${PORT}`)});
 
-
+module.exports = wsServer;
