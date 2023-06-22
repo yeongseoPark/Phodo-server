@@ -9,6 +9,10 @@ const imageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  category: {
+    type: Array,
+    required: true,
+  },
   tags: {
     type: Array,
     required: true,
