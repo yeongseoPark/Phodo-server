@@ -29,7 +29,7 @@ const { MongoClient } = require('mongodb');
 
 // CORS 옵션 설정
 const corsOptions = {
-  origin: 'chrome-extension://ophmdkgfcjapomjdpfobjfbihojchbko', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
+  origin: 'https://phodo.store', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
   allowedHeaders:  [
     "Content-Type",
@@ -235,10 +235,15 @@ const redis = require('redis');
 const client =  redis.createClient({
   socket: {
       host: 'localhost', // ec2 상에서는 변경 필요
-      port: 6379 // default
+      port: 6379, // default
+      db : 0
   }
 });
+client.on('connect', function() {
+  console.log('Redis client connected');
+});
 client.on('error', err => console.log('Redis Server Error', err));
+
 /* ----------- Redis -------------- */
 
 // MongoDB 연결 정보
@@ -385,12 +390,14 @@ wsServer.on("connection", async (socket) => {
   
 });
 
+
+
+
 /* 60초에 한번씩 redis의 값을 database에 써줘야함 */
 setInterval(() => {
-  console.log(activeProjects)
   if (activeProjects.size > 0) {
-    saveDataToMongoDB(activeProjects, client);
   }
+  saveDataToMongoDB(activeProjects, mongoClient, client);
 }, 15000);
 
 // SERVER LISTEN
