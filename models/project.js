@@ -10,16 +10,16 @@ let projectSchema = new mongoose.Schema({
     required: true,
     ref: 'User',
   }],
-  nodeIds: [{ // 1 Project : Many Nodes
+  nodeId: { // 1 Project : Many Nodes
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    required: false,
     ref: 'Node',
-  }],
-  edgeIds: [{ // 1 Project : Many Edges
+  },
+  edgeId: { // 1 Project : Many Edges
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    required: false,
     ref: 'Edge',
-  }],
+  },
 });
 
 

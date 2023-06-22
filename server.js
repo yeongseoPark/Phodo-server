@@ -23,6 +23,9 @@ const LocalStrategy = require('passport-local').Strategy;
 const cookieParser = require('cookie-parser');
 const SocketIO = require("socket.io");
 const http = require("http");
+const { saveDataToMongoDB } = require('./redisToMongo');
+const { MongoClient } = require('mongodb');
+
 
 // CORS 옵션 설정
 const corsOptions = {
@@ -238,6 +241,14 @@ const client =  redis.createClient({
 client.on('error', err => console.log('Redis Server Error', err));
 /* ----------- Redis -------------- */
 
+// MongoDB 연결 정보
+const mongoURI = 'mongodb://localhost:27017';
+
+// MongoDB 클라이언트 생성 및 연결
+const mongoClient = new MongoClient(mongoURI);
+
+activeProjects = new Set(); // 현재 열려있는 방의 목록들을 추적
+
 wsServer.on("connection", async (socket) => {
   await client.connect()
 
@@ -329,65 +340,58 @@ wsServer.on("connection", async (socket) => {
   });
 
   socket.on('yjs-update', async (update) => {
-
     const projectId = Object.keys(update)[0]; // This will extract the first key in the 'update' object
+    const count = update[projectId].yjsDoc.count; // 현재 방의 인원수
+    // const projectObj = await Project.findById(project);
     const yjsDoc = update[projectId].yjsDoc;
-
-    const yjsDocToString = await JSON.stringify(yjsDoc);
-    await client.set(projectId, yjsDocToString, (err) => {
+  
+    if (count <= 0) { // 해당 값 DB에 쓰고, 레디스에 존재하는 데이터는 지워줘야 함
+      await mongoClient.connect();
+      const db = mongoClient.db(phodo);
+  
+      // DB에 노드 저장
+      const nodeCollection = db.collection(nodes);
+      let updateResult = await nodeCollection.updateOne(
+        { projectId: projectId },
+        { $set: yjsDoc.nodes }
+      );
+  
+      // DB에 엣지 저장
+      const edgeCollection = db.collection(edges);
+      updateResult = await edgeCollection.updateOne(
+        { projectId: projectId },
+        { $set: yjsDoc.edges }
+      );
+  
+      // Redis에서 해당 projectId의 데이터를 삭제
+      client.del(projectId, function(err, response) {
+        if (err) {
+          console.log(err);
+        }
+      });
+  
+      // activeProjects에서 해당 projectId를 삭제
+      activeProjects.delete(projectId);
+      
+    } else {  
+      activeProjects.add(projectId)
+  
+      const yjsDocToString = await JSON.stringify(yjsDoc);
+      await client.set(projectId, yjsDocToString, (err) => {
         if (err) console.error(err);
-    })
-    // const projectId = Object.keys(update)[0]; // This will extract the first key in the 'update' object
-    // const yjsDoc = update[projectId].yjsDoc;
-
-    // /* Hset 사용하는 방식 -> nested 처리 안돼있음 */
-    // console.log(`yjsDoc[edge]: ${JSON.stringify(yjsDoc['edge'])}`);
-
-    // // Separate handling for nodes and edges
-    // ["node", "edge"].forEach(type => {
-    //     const items = yjsDoc[type];  // items is an array of nodes or edges
-
-    //     // Start a Redis MULTI transaction
-    //     const multi = client.multi();
-
-    //     items.forEach(item => {
-    //         console.log("아이템" + item)
-    //         // Key is something like "node:100" or "edge:e-107bottom-108top"
-    //         const key = `${type}:${item.id}`;
-
-    //         // Retrieve the existing item from Redis
-    //         client.hget(projectId, key, (err, existingItemString) => {
-    //             if (err) {
-    //                 console.error(err);
-    //                 // Send error message to the client
-    //                 socket.emit('yjs-update-result', { success: false, error: err });
-    //                 return;
-    //             }
-
-    //             const newItemString = JSON.stringify(item);
-
-    //             // Only update Redis if the item has changed
-    //             if (newItemString !== existingItemString) {
-    //                 // Add the HSET command to the MULTI transaction
-    //                 multi.hset(projectId, key, newItemString);
-    //             }
-    //         });
-    //     });
-
-    //     // Execute the MULTI transaction
-    //       multi.exec((err, replies) => {
-    //           if (err) {
-    //               console.error(err);
-    //               // Send error message to the client
-    //               socket.emit('yjs-update-result', { success: false, error: err });
-    //           } else {
-    //               // Send success message to the client
-    //               socket.emit('yjs-update-result', { success: true });
-    //           }
-    //       });
-    //   });
+      });
+    }
   });
+  
 });
+
+/* 60초에 한번씩 redis의 값을 database에 써줘야함 */
+setInterval(() => {
+  console.log(activeProjects)
+  if (activeProjects.size > 0) {
+    saveDataToMongoDB(activeProjects, client);
+  }
+}, 15000);
 
 // SERVER LISTEN
 // app.listen(PORT, () => {

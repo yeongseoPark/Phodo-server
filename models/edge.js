@@ -1,14 +1,15 @@
 const mongoose = require('mongoose');
 
 const EdgeSchema = mongoose.Schema({
-    source: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true
-    },
-    target: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true
-    }
+  info : {
+    type : String,
+    required : true,
+  },
+  projectId: { 
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'Project',
+  }
 });
 
 module.exports = mongoose.model('Edges', EdgeSchema);

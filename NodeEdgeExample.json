@@ -1,6 +1,7 @@
 {
-    "projectId": {
+    "projectId": { 
         "yjsDoc": {
+            "count" : 2,
             "node": [
                 {
                     "id": "100",
