@@ -9,15 +9,19 @@ const imageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  category: {
+    type: Array,
+    required: true,
+  },
   tags: {
     type: Array,
     required: true,
   },
-  userId : {
-    type : mongoose.Schema.Types.ObjectId,
-    required : true,
-    ref : 'User',
-  },
+  // userId : {
+  //   type : mongoose.Schema.Types.ObjectId,
+  //   required : true,
+  //   ref : 'User',
+  // },
   time : {
     type : Date,
     required : true,
