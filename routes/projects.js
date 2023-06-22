@@ -121,7 +121,8 @@ router.get('/project', async (req, res) => {
         // 각 프로젝트의 _id와 name만 추출
         const projectNamesAndIds = projects.map(project => ({
             _id: project._id,
-            name: project.name
+            name: project.name,
+            /* 각 프로젝트의 대표 이미지 주기 !! */
         }));
 
         // 결과 반환
