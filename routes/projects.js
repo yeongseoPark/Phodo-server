@@ -5,6 +5,7 @@ const Edge = require('../models/edge');
 const Project = require('../models/project');
 const { route } = require('./users');
 const nodemailer = require('nodemailer');
+const Node = require('../models/node');
 
 // Create new project
 router.post('/project', async (req, res) => {
@@ -110,8 +111,22 @@ router.get('/project/:newUserEmail/:projectId', async(req, res) => {
     }
 })
 
+function getRepresentingImgURL(NodeId) {
+    const nodes = Node.find({nodeId : NodeId})
+    const nodesObj = JSON.parse(nodes);
+
+    for (key in nodesObj) {
+        if (nodesObj[key].type === 'pix') {
+            return nodesObj[key].data.url;
+        }
+    }
+
+    return null;
+}
+
 // get project
 router.get('/project', async (req, res) => {
+
     const userId = req.user._id;  // 요청한 유저의 ID 가져오기
 
     try {
@@ -123,6 +138,7 @@ router.get('/project', async (req, res) => {
             _id: project._id,
             name: project.name,
             /* 각 프로젝트의 대표 이미지 주기 !! */
+            image : getRepresentingImgURL(project.nodeId)
         }));
 
         // 결과 반환
