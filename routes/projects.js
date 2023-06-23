@@ -6,6 +6,8 @@ const Project = require('../models/project');
 const { route } = require('./users');
 const nodemailer = require('nodemailer');
 const Node = require('../models/node');
+const mongoose = require('mongoose');
+const ObjectId = mongoose.Types.ObjectId;
 
 // Create new project
 router.post('/project', async (req, res) => {
@@ -111,35 +113,44 @@ router.get('/project/:newUserEmail/:projectId', async(req, res) => {
     }
 })
 
-function getRepresentingImgURL(NodeId) {
-    const nodes = Node.find({nodeId : NodeId})
-    const nodesObj = JSON.parse(nodes);
+async function getRepresentingImgURL(NodeId) {
+    try {
+        const nodes = await Node.findById(NodeId);
+        const nodesObj = JSON.parse(JSON.stringify(nodes));
+        const parsed_json = JSON.parse(nodesObj.info)
 
-    for (key in nodesObj) {
-        if (nodesObj[key].type === 'pix') {
-            return nodesObj[key].data.url;
+        for(let obj of parsed_json) {
+            if(obj.type === 'pix' && obj.data?.url) {
+                return obj.data.url
+            }
         }
-    }
 
-    return null;
+        return null;
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
 }
 
 // get project
 router.get('/project', async (req, res) => {
-
     const userId = req.user._id;  // 요청한 유저의 ID 가져오기
 
     try {
         // Project 테이블에서 userIds에 userId를 포함하는 프로젝트를 모두 찾음
         const projects = await Project.find({ userIds: userId });
-        
+
         // 각 프로젝트의 _id와 name만 추출
-        const projectNamesAndIds = projects.map(project => ({
-            _id: project._id,
-            name: project.name,
-            /* 각 프로젝트의 대표 이미지 주기 !! */
-            image : getRepresentingImgURL(project.nodeId)
-        }));
+        const projectNamesAndIdsPromises = projects.map(async (project) => {
+            const imageUrl = await getRepresentingImgURL(project.nodeId);
+            return {
+                _id: project._id,
+                name: project.name,
+                image : imageUrl
+            };
+        });
+
+        const projectNamesAndIds = await Promise.all(projectNamesAndIdsPromises);
 
         // 결과 반환
         res.status(200).json(projectNamesAndIds);
@@ -147,6 +158,7 @@ router.get('/project', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 
 // Rename project
 router.patch('/project/:projectId', async (req, res) => {
