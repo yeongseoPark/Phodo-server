@@ -233,6 +233,11 @@ const storage = new Storage({
 // 이미지 업로드 및 URL 저장 라우트 핸들러(npm install express-fileupload)
 router.post('/upload', (req, res) => {
     try {
+
+        // 세션에서 현재 로그인한 사용자의 식별자 가져오기
+        // console.log(req.user)
+        const userId = req.user._id;
+
         // 클라이언트로부터 이미지 파일 받기
         let images = req.files.image;
         
@@ -394,7 +399,7 @@ router.post('/upload', (req, res) => {
                     thumbnailUrl: thumbnailUrl,
                     time: imageCreationTime,
                     location: address,
-                    // userId: userId, // 소유자 정보 할당
+                    userId: userId, // 소유자 정보 할당
                 });
                 console.log(imageDocument);
                 await imageDocument.save(); // save() 메서드 : mongoDB에 저장
@@ -417,10 +422,10 @@ router.get('/gallery', async (req, res) => {
     try {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
         // console.log(req.user)
-        // const userId = req.user._id;
+        const userId = req.user._id;
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
-        const imagesQuery = Image.find({});  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({ userId: userId });  // find 메서드의 결과로 쿼리가 생성됨
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
 
         // 이미지 정보를 배열 형식으로 추출
@@ -436,7 +441,8 @@ router.get('/gallery', async (req, res) => {
                 tags,
                 thumbnailUrl: image.thumbnailUrl,
                 time: image.time,
-                location: image.location
+                location: image.location,
+                userId: image.userId,
             };          
         });
         // console.log(imageUrlsTags);
@@ -453,13 +459,13 @@ router.get('/gallery', async (req, res) => {
 router.post('/galleryTags', async (req, res) => {
     try {
         // 로그인한 사용자의 식별자 & 사용자가 요청한 태그(카테고리) 가져오기
-        // const userId = req.user;
+        const userId = req.user;
         const category = req.body.tags;
         const startDate = req.body.startDate;
         const endDate = req.body.endDate;
 
         // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
-        let imagesQuery = Image.find({ category: { $in: category } });  // find 메서드의 결과로 쿼리가 생성됨
+        let imagesQuery = Image.find({ userId: userId, category: { $in: category } });  // find 메서드의 결과로 쿼리가 생성됨
         
         // 해당 날짜에 속하는 것들만 다시 추출
         if (startDate && endDate) {
@@ -481,7 +487,8 @@ router.post('/galleryTags', async (req, res) => {
                 tags,
                 thumbnailUrl: image.thumbnailUrl,
                 time: image.time,
-                location: image.location
+                location: image.location,
+                userId: image.userId,
             };
         });
         // 성공 시
@@ -492,36 +499,36 @@ router.post('/galleryTags', async (req, res) => {
     }
 });
 
-// 갤러리에서 선택된 데이터 삭제 라우터
-router.post('/galleryDelete', async (req, res) => {
-    try {
-        // const imageID = req.body._id;
+// // 갤러리에서 선택된 데이터 삭제 라우터
+// router.post('/galleryDelete', async (req, res) => {
+//     try {
+//         // const imageID = req.body._id;
 
-        // // 이미지 삭제 전, 다른 곳에서 참조되고 있는지 확인 필요
-        // const nodes = await Node.find({ imageObj: imageID });
-        // const projects = await Project.find({ nodeIds: { $in: nodes.map(node => node._id )}});
+//         // // 이미지 삭제 전, 다른 곳에서 참조되고 있는지 확인 필요
+//         // const nodes = await Node.find({ imageObj: imageID });
+//         // const projects = await Project.find({ nodeIds: { $in: nodes.map(node => node._id )}});
 
-        // // 만약 참조되고 있다면
-        // if (nodes.length > 0 || projects.length >0) {
-        //     // const refNodes = nodes.map(node => node._id);
-        //     const refProjects = projects.map(project => project._id);
-        //     res.status(400).json({
-        //         error: "Selected Image is referenced by other Projects",
-        //         refProjects // 참조되고 있는 프로젝트 
-        //     });
-        //     return;
-        // }
+//         // // 만약 참조되고 있다면
+//         // if (nodes.length > 0 || projects.length >0) {
+//         //     // const refNodes = nodes.map(node => node._id);
+//         //     const refProjects = projects.map(project => project._id);
+//         //     res.status(400).json({
+//         //         error: "Selected Image is referenced by other Projects",
+//         //         refProjects // 참조되고 있는 프로젝트 
+//         //     });
+//         //     return;
+//         // }
 
-        // 이미지 삭제
-        await Image.findByIdAndDelete(imageID);
+//         // 이미지 삭제
+//         await Image.findByIdAndDelete(imageID);
  
-        // 성공 시
-        res.status(200).json(); 
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to Delete image'})
-    }
-});
+//         // 성공 시
+//         res.status(200).json(); 
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).json({ error: 'Failed to Delete image'})
+//     }
+// });
 
 
 // Phodo 즐겨찾기 라우터 (미완성)
