@@ -2,7 +2,7 @@
     "projectId": { 
         "yjsDoc": {
             "count" : 2,
-            "node": [
+            "node": [ 
                 {
                     "id": "100",
                     "type": "TextNode",

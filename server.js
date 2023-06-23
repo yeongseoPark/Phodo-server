@@ -245,7 +245,6 @@ client.on('connect', function() {
   console.log('Redis client connected');
 });
 client.on('error', err => console.log('Redis Server Error', err));
-
 /* ----------- Redis -------------- */
 
 // MongoDB 연결 정보
@@ -254,11 +253,29 @@ const mongoURI = 'mongodb://localhost:27017';
 // MongoDB 클라이언트 생성 및 연결
 const mongoClient = new MongoClient(mongoURI);
 
+/* 초기화 함수 */
+async function initializeDatabases() {
+  try {
+    // Redis 연결
+    await client.connect();
+    console.log('connected to Redis')
+
+    // MongoDB 연결
+    await mongoClient.connect();
+    console.log('Connected to MongoDB');
+  } catch (err) {
+    console.error('Failed to connect to databases', err);
+    process.exit(1); // 프로세스를 종료하고 에러 코드 1을 반환합니다.
+  }
+}
+
+/* 초기화 함수 */ 
+initializeDatabases();
+
+
 activeProjects = new Set(); // 현재 열려있는 방의 목록들을 추적
 
 wsServer.on("connection", async (socket) => {
-  await client.connect()
-
   let myRoomName = null;
   let myNickname = null;
 
@@ -354,7 +371,6 @@ wsServer.on("connection", async (socket) => {
     
     /* 더이상 남아있는 사람이 없으므로, yjsDoc 내용 바로 DB에 쓰고, 레디스의 값은 지워줘야 함 */ 
     if (count <= 0) { 
-      await mongoClient.connect();
       const db = mongoClient.db('phodo');
       
       console.log("여기")
