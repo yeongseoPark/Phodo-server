@@ -235,7 +235,7 @@ router.post('/upload', (req, res) => {
     try {
 
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
-        // console.log(req.user)
+        // console.log(req.user);
         const userId = req.user._id;
 
         // 클라이언트로부터 이미지 파일 받기
@@ -321,7 +321,7 @@ router.post('/upload', (req, res) => {
                 };
                     
                 // 추출한 태그들의 카테고리 분류
-                const [classification] = await language.classifyText({ document, classificationModelOptions, });
+                const [classification] = language.classifyText({ document, classificationModelOptions, });
                 const categories = classification.categories.map(category => category.name);  // 가장 신뢰도 높은 카테고리 추출
 
                 // 카테고리의 중분류, 소분류를 태그로 추출해서 TagsGoodscore 앞에 삽입
@@ -425,7 +425,8 @@ router.get('/gallery', async (req, res) => {
         const userId = req.user._id;
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
-        const imagesQuery = Image.find({ userId: userId });  // find 메서드의 결과로 쿼리가 생성됨
+        const imagesQuery = Image.find({ userId: userId })  // find 메서드의 결과로 쿼리가 생성됨
+            .sort({ time: -1 });  // 시간 기준으로 내림차순 정렬(최신순)
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
 
         // 이미지 정보를 배열 형식으로 추출
@@ -459,7 +460,7 @@ router.get('/gallery', async (req, res) => {
 router.post('/galleryTags', async (req, res) => {
     try {
         // 로그인한 사용자의 식별자 & 사용자가 요청한 태그(카테고리) 가져오기
-        const userId = req.user;
+        const userId = req.user._id;
         const category = req.body.tags;
         const startDate = req.body.startDate;
         const endDate = req.body.endDate;
@@ -472,6 +473,7 @@ router.post('/galleryTags', async (req, res) => {
             imagesQuery = imagesQuery.where('time').gte(new Date(startDate)).lte(new Date(endDate));
         }
         
+        imagesQuery = imagesQuery.sort({ time: -1 });  // 시간 기준으로 내림차순 정렬(최신순)
         const images = await imagesQuery.exec();  //해당 쿼리를 실행
         
         // url과 tags를 배열 형식으로 추출
@@ -499,36 +501,48 @@ router.post('/galleryTags', async (req, res) => {
     }
 });
 
-// // 갤러리에서 선택된 데이터 삭제 라우터
-// router.post('/galleryDelete', async (req, res) => {
-//     try {
-//         // const imageID = req.body._id;
+// 갤러리에서 선택된 데이터 삭제 라우터
+router.post('/galleryDelete', async (req, res) => {
+    try {
 
-//         // // 이미지 삭제 전, 다른 곳에서 참조되고 있는지 확인 필요
-//         // const nodes = await Node.find({ imageObj: imageID });
-//         // const projects = await Project.find({ nodeIds: { $in: nodes.map(node => node._id )}});
+        // 세션에서 현재 로그인한 사용자의 식별자 가져오기
+        const userId = req.user._id;
 
-//         // // 만약 참조되고 있다면
-//         // if (nodes.length > 0 || projects.length >0) {
-//         //     // const refNodes = nodes.map(node => node._id);
-//         //     const refProjects = projects.map(project => project._id);
-//         //     res.status(400).json({
-//         //         error: "Selected Image is referenced by other Projects",
-//         //         refProjects // 참조되고 있는 프로젝트 
-//         //     });
-//         //     return;
-//         // }
+        // 클라이언트로부터 이미지 파일 받기
+        let imageIds = req.body._id;
 
-//         // 이미지 삭제
-//         await Image.findByIdAndDelete(imageID);
- 
-//         // 성공 시
-//         res.status(200).json(); 
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).json({ error: 'Failed to Delete image'})
-//     }
-// });
+        // imageIds가 배열이 아닌 경우 배열로 감싸기
+        if (!Array.isArray(imageIds)) {
+            imageIds = [imageIds];
+        }
+        
+        for (const imageId of imageIds) {
+
+            // // 이미지 삭제 전, 다른 곳에서 참조되고 있는지 확인 필요
+            // const nodes = await Node.find({ imageObj: imageID });
+            // const projects = await Project.find({ nodeIds: { $in: nodes.map(node => node._id )}});
+
+            // // 만약 참조되고 있다면
+            // if (nodes.length > 0 || projects.length >0) {
+            //     // const refNodes = nodes.map(node => node._id);
+            //     const refProjects = projects.map(project => project._id);
+            //     res.status(400).json({
+            //         error: "Selected Image is referenced by other Projects",
+            //         refProjects // 참조되고 있는 프로젝트 
+            //     });
+            //     return;
+            // }
+
+            // 이미지 삭제
+            await Image.findByIdAndDelete({ userId: userId, _id: imageId});
+        }    
+        // 성공 시
+        res.status(200).json({ message: 'Image has been deleted'}); 
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to Delete image'})
+    }
+});
 
 
 // Phodo 즐겨찾기 라우터 (미완성)
