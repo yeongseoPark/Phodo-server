@@ -48,6 +48,9 @@ const corsOptions = {
 const PORT = 4000;
 const app = express();
 
+// CORS 미들웨어를 사용하여 모든 경로에 대해 CORS 옵션 적용
+app.use(cors(corsOptions));
+
 const httpServer = http.createServer(app);
 const wsServer = SocketIO(httpServer, {
   cors : corsOptions
@@ -92,8 +95,6 @@ passport.deserializeUser(User.deserializeUser());
 
 dotenv.config({path : './.env'});
 
-// CORS 미들웨어를 사용하여 모든 경로에 대해 CORS 옵션 적용
-app.use(cors(corsOptions));
 
 const store = new mongoStore({
   collection: "userSessions",
@@ -349,23 +350,27 @@ wsServer.on("connection", async (socket) => {
     const count = update[projectId].yjsDoc.count; // 현재 방의 인원수
     // const projectObj = await Project.findById(project);
     const yjsDoc = update[projectId].yjsDoc;
-  
-    if (count <= 0) { // 해당 값 DB에 쓰고, 레디스에 존재하는 데이터는 지워줘야 함
+    
+    /* 더이상 남아있는 사람이 없으므로, yjsDoc 내용 바로 DB에 쓰고, 레디스의 값은 지워줘야 함 */ 
+    if (count <= 0) { 
       await mongoClient.connect();
-      const db = mongoClient.db(phodo);
-  
+      const db = mongoClient.db('phodo');
+      
+      console.log("여기")
       // DB에 노드 저장
-      const nodeCollection = db.collection(nodes);
+      const nodeCollection = db.collection('nodes');
       let updateResult = await nodeCollection.updateOne(
         { projectId: projectId },
-        { $set: yjsDoc.nodes }
+        { $set: { "info" : JSON.stringify(yjsDoc.node) }},
+        {upsert: true}
       );
   
       // DB에 엣지 저장
-      const edgeCollection = db.collection(edges);
+      const edgeCollection = db.collection('edges');
       updateResult = await edgeCollection.updateOne(
         { projectId: projectId },
-        { $set: yjsDoc.edges }
+        { $set: { "info" : JSON.stringify(yjsDoc.node) }},
+        {upsert: true}
       );
   
       // Redis에서 해당 projectId의 데이터를 삭제
@@ -378,7 +383,7 @@ wsServer.on("connection", async (socket) => {
       // activeProjects에서 해당 projectId를 삭제
       activeProjects.delete(projectId);
       
-    } else {  
+    } else { /* redis에 데이터 저장 */  
       activeProjects.add(projectId)
   
       const yjsDocToString = await JSON.stringify(yjsDoc);
