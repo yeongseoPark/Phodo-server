@@ -29,7 +29,8 @@ async function getImageCreationTime(filePath) {
         } else {
             // Exif 데이터가 없다면 파일의 생성 시간을 반환
             const stat = fs.statSync(filePath);
-            return stat.birthtime.toISOString().slice(0,19);
+            const birthTime = stat.birthtime.toISOString().slice(0,19);
+            return birthTime ? birthTime : null; // 파일의 생성 시간이 없을 경우에도 null 반환
         }
     } catch (error) {
         console.error(`Failed to read Exif data: ${error}`);
@@ -371,10 +372,12 @@ router.post('/upload', (req, res) => {
 
                 // Exif 데이터에서 촬영 시간 가져오기
                 const imageCreationTime = await getImageCreationTime(tmpFilePath);
-                // if (!imageCreationTime) { // Exif 데이터에서 촬영 시간을 가져오지 못했을 때의 처리
-                //     // res.status(500).json({ error: 'Failed to read image creation time from Exif data' });
-                //     // return;
-                // }
+                let createtime;
+                if (!imageCreationTime) { // Exif 데이터에서 촬영 시간을 가져오지 못했을 때의 처리
+                    createtime = ""  // 빈 문자열 설정
+                    // res.status(500).json({ error: 'Failed to read image creation time from Exif data' });
+                    // return;
+                }
                 
                 // Exif 데이터에서 장소 정보 가져오기
                 const imageLocation = await getImageLocation(tmpFilePath);
@@ -397,7 +400,7 @@ router.post('/upload', (req, res) => {
                     category: imageCategory,
                     tags: imageTags,
                     thumbnailUrl: thumbnailUrl,
-                    time: imageCreationTime,
+                    time: createtime,
                     location: address,
                     userId: userId, // 소유자 정보 할당
                 });
