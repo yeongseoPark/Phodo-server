@@ -116,6 +116,8 @@ router.get('/project/:newUserEmail/:projectId', async(req, res) => {
 async function getRepresentingImgURL(NodeId) {
     try {
         const nodes = await Node.findById(NodeId);
+        if (!nodes) return null; // cannot read properties of null('info') 방지
+
         const nodesObj = JSON.parse(JSON.stringify(nodes));
         const parsed_json = JSON.parse(nodesObj.info)
 
@@ -141,7 +143,7 @@ router.get('/project', async (req, res) => {
         const projects = await Project.find({ userIds: userId });
 
         // 각 프로젝트의 _id와 name만 추출
-        const projectNamesAndIdsPromises = projects.map(async (project) => {
+        const projectNamesAndIdsPromises = projects.map(async (project) => { // promise들의 배열 생성
             const imageUrl = await getRepresentingImgURL(project.nodeId);
             return {
                 _id: project._id,
@@ -150,6 +152,7 @@ router.get('/project', async (req, res) => {
             };
         });
 
+        // promise 배열 실행 기다림
         const projectNamesAndIds = await Promise.all(projectNamesAndIdsPromises);
 
         // 결과 반환
