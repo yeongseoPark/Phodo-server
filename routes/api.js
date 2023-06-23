@@ -321,7 +321,7 @@ router.post('/upload', (req, res) => {
                 };
                     
                 // 추출한 태그들의 카테고리 분류
-                const [classification] = language.classifyText({ document, classificationModelOptions, });
+                const [classification] = await language.classifyText({ document, classificationModelOptions, });
                 const categories = classification.categories.map(category => category.name);  // 가장 신뢰도 높은 카테고리 추출
 
                 // 카테고리의 중분류, 소분류를 태그로 추출해서 TagsGoodscore 앞에 삽입
