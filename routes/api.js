@@ -371,10 +371,10 @@ router.post('/upload', (req, res) => {
 
                 // Exif 데이터에서 촬영 시간 가져오기
                 const imageCreationTime = await getImageCreationTime(tmpFilePath);
-                if (!imageCreationTime) { // Exif 데이터에서 촬영 시간을 가져오지 못했을 때의 처리
-                    res.status(500).json({ error: 'Failed to read image creation time from Exif data' });
-                    // return;
-                }
+                // if (!imageCreationTime) { // Exif 데이터에서 촬영 시간을 가져오지 못했을 때의 처리
+                //     // res.status(500).json({ error: 'Failed to read image creation time from Exif data' });
+                //     // return;
+                // }
                 
                 // Exif 데이터에서 장소 정보 가져오기
                 const imageLocation = await getImageLocation(tmpFilePath);
