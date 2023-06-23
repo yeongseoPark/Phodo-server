@@ -7,9 +7,23 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
 
     // 열려있는 방 목록을 순회
     for (let project of activeProjects) {
-        console.log(project)
         const redisData = await redisClient.get(project);
-            const projectObj = await Project.findById(project);
+        let projectObj;
+            try {
+                projectObj = await Project.findById(project);
+            } catch (error) {
+                console.error('Error message:', error.message);
+                console.error('Stack trace:', error.stack);
+                activeProjects.delete(project);
+                redisClient.del(project, function(err, response) { // 존재하지 않는 프로젝트 id를 가진 레디스값 삭제
+                    if (err) {
+                      console.log(err);
+                    }
+                })
+
+                return;
+            
+            }          
             const DataToObject = await JSON.parse(redisData);
   
             // MongoDB에 데이터 저장
