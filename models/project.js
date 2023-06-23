@@ -10,12 +10,12 @@ let projectSchema = new mongoose.Schema({
     required: true,
     ref: 'User',
   }],
-  nodeId: { // 1 Project : Many Nodes
+  nodeId: { 
     type: mongoose.Schema.Types.ObjectId,
     required: false,
     ref: 'Node',
   },
-  edgeId: { // 1 Project : Many Edges
+  edgeId: { 
     type: mongoose.Schema.Types.ObjectId,
     required: false,
     ref: 'Edge',

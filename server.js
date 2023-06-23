@@ -95,7 +95,6 @@ passport.deserializeUser(User.deserializeUser());
 
 dotenv.config({path : './.env'});
 
-
 const store = new mongoStore({
   collection: "userSessions",
   uri: process.env.mongoURI,
@@ -107,7 +106,7 @@ app.set('trust proxy', 1);
 app.use(
   session({
     name: "SESSION_NAME",
-    secret: "SESS_SECRET",
+    secret: process.env.SESSION_SECRET,
     store: store,
     saveUninitialized: false,
     resave: false,
@@ -128,9 +127,7 @@ app.get("/chat", (req, res) => {
   res.render("chat");
 });
 
-
 /*--------------------- dohee 추가 : 클라우드 이미지 url ------------------------*/
-// npm install : dotenv, path, express, mongoose, cookieParser
 const fileUpload = require('express-fileupload');
 app.use(fileUpload());
 /*-------------------------------------------------------------------*/
@@ -143,12 +140,10 @@ app.use(express.urlencoded({ extended: true }));
 // app.use(express.static(path.join(__dirname, '../client/dist')));
 app.use("/public", express.static(__dirname + "/public"));
 
-
 const userRoutes = require('./routes/users');
 app.use(userRoutes);
 
 // ROUTES
-// const userRoutes = require('./routes/users');
 const edgeRoutes = require('./routes/edges');
 app.use(edgeRoutes);
 
@@ -158,28 +153,8 @@ app.use(projectRoutes);
 app.use('/api', require('./routes/api'));
 app.use('', require('./routes/nodes'));
 
-//HANDLE CLIENT-SIDE ROUTING
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-// });
-
-// passport.use(new LocalStrategy({usernameField : 'email'}, User.authenticate()));
-  
 // UNKNOWN ROUTE HANDLER
 app.use((req, res) => res.status(404).send('404 Not Found'));
-
-app.get('/healthy', (req, res) => {
-  res.status(200).end();
-});
-
-// // setting middleware globally
-// app.use((req, res, next) => {
-//   res.locals.success_msg = req.flash(('success_msg'));
-//   res.locals.error_msg = req.flash(('error_msg'));
-//   res.locals.error = req.flash(('error'));
-//   res.locals.currentUser = req.user;
-//   next();
-// });
 
 // GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
@@ -197,7 +172,6 @@ app.use((err, req, res, next) => {
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 app.set('views', path.join(__dirname, '../client/views'));
-// app.use(express.static('public'));
 
 // MONGODB CONNECTION
 mongoose.connect(process.env.MONGO_URI, {
@@ -210,13 +184,6 @@ mongoose.connect(process.env.MONGO_URI, {
 /* ------------- ---------  socket 코드  ---  -------------------------- */
 app.set("view engine", "pug");
 app.set("views", process.cwd() + "/src/views");
-
-// app.use("/public", express.static(process.cwd() + "/src/public"));
-
-
-// app.get("/*", (req, res) => {
-//   res.redirect("/");
-// });
 
 let roomObjArr = [
   // {
@@ -236,7 +203,7 @@ const MAXIMUM = 5;
 const redis = require('redis');
 const client =  redis.createClient({
   socket: {
-      host: 'localhost', // ec2 상에서는 변경 필요
+      host: 'localhost', 
       port: 6379, // default
       db : 0
   }
@@ -271,7 +238,6 @@ async function initializeDatabases() {
 
 /* 초기화 함수 */ 
 initializeDatabases();
-
 
 activeProjects = new Set(); // 현재 열려있는 방의 목록들을 추적
 
@@ -373,7 +339,6 @@ wsServer.on("connection", async (socket) => {
     if (count <= 0) { 
       const db = mongoClient.db('phodo');
       
-      console.log("여기")
       // DB에 노드 저장
       const nodeCollection = db.collection('nodes');
       let updateResult = await nodeCollection.updateOne(
@@ -412,9 +377,6 @@ wsServer.on("connection", async (socket) => {
   
 });
 
-
-
-
 /* 60초에 한번씩 redis의 값을 database에 써줘야함 */
 setInterval(() => {
   if (activeProjects.size > 0) {
@@ -422,10 +384,6 @@ setInterval(() => {
   saveDataToMongoDB(activeProjects, mongoClient, client);
 }, 15000);
 
-// SERVER LISTEN
-// app.listen(PORT, () => {
-//   console.log(`Server started on port ${PORT}`);
-// });
 
 httpServer.listen(PORT,() => {
     console.log(`Server started on port ${PORT}`)});
