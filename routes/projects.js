@@ -136,9 +136,9 @@ async function getRepresentingImgURL(NodeId) {
 
 // get project
 router.get('/project', async (req, res) => {
-    const userId = req.user._id;  // 요청한 유저의 ID 가져오기
-
     try {
+        const userId = req.user._id;  // 요청한 유저의 ID 가져오기
+
         // Project 테이블에서 userIds에 userId를 포함하는 프로젝트를 모두 찾음
         const projects = await Project.find({ userIds: userId });
 
