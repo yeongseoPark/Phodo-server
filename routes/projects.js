@@ -215,6 +215,4 @@ router.delete('/project/:projectId', async (req, res) => {
     }
 });
 
-
-
 module.exports = router;
