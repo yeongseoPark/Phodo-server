@@ -509,7 +509,7 @@ router.post('/galleryDelete', async (req, res) => {
         const userId = req.user._id;
 
         // 클라이언트로부터 이미지 파일 받기
-        let imageIds = req.body._id;
+        let imageIds = req.body.id;
 
         // imageIds가 배열이 아닌 경우 배열로 감싸기
         if (!Array.isArray(imageIds)) {
