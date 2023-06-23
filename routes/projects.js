@@ -58,7 +58,7 @@ router.post('/project/:projectId', async(req, res) => {
         });
         
         const project = await Project.findById(projectId);
-        const domain = process.env.LOCAL_SERVER; // 배포시 바꿔줘야 함
+        const domain = "https://hyeontae.shop"; // 배포시 바꿔줘야 함
 
         let mailOptions = {
             to: InvitedUserEmail,
