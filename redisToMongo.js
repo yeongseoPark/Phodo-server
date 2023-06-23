@@ -13,7 +13,6 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
             const DataToObject = await JSON.parse(redisData);
   
             // MongoDB에 데이터 저장
-            await mongoClient.connect();
             const db = await mongoClient.db('phodo');
   
             const nodeCollection = await db.collection('nodes');
