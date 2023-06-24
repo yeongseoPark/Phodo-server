@@ -30,6 +30,10 @@ const imageSchema = new mongoose.Schema({
     type : String,
     required : false,
   },
+  uploadTime: {
+    type : Date,
+    required : true,
+  },
 });
 
 const Image = mongoose.model('Image', imageSchema);
