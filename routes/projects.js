@@ -79,6 +79,47 @@ router.post('/project/:projectId', async(req, res) => {
     }
 }) 
 
+/* 특정 프로젝트 get */
+router.get('/project/:projectId', async(req, res) => { 
+    try {
+        const project = await Project.findById(req.params.projectId);
+        console.log(project.nodeId)
+
+        const node = await Node.findById(project.nodeId);
+        const edge = await Edge.findById(project.edgeId);
+
+        let nodeInfo = node ? node.info : undefined;
+        let edgeInfo = edge ? edge.info : undefined;
+
+        nodeInfo = nodeInfo ? JSON.parse(nodeInfo) : undefined;
+        edgeInfo = edgeInfo ? JSON.parse(edgeInfo) : undefined;
+
+        console.log("노드", nodeInfo);
+        console.log("엣지", edgeInfo);
+
+        // 노드 정보와 엣지 정보를 하나의 객체로 만들고 이를 응답으로 전송
+        const response = {
+            node: nodeInfo,
+            edge: edgeInfo
+        };
+
+        return res.json(response);
+    } catch (err) {
+        console.error(err);
+
+        if (err instanceof mongoose.Error.CastError) {
+            return res.status(400).json({ message: 'Invalid ID format' });
+        }
+
+        if (err instanceof mongoose.Error.DocumentNotFoundError) {
+            return res.status(404).json({ message: 'Document not found' });
+        }
+
+        return res.status(500).json({ message: err.message });
+    }
+});
+
+
 // 해당 이메일 클릭시 유저와 project document 모두에 join 사실 반영
 router.get('/project/:newUserEmail/:projectId', async(req, res) => {
     try {
