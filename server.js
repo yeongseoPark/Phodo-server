@@ -29,7 +29,7 @@ const { MongoClient } = require('mongodb');
 
 // CORS 옵션 설정
 const corsOptions = {
-  origin: 'https://phodo.store', // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
+  origin:  ['https://phodo.store', 'https://www.phodo.store'], // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
   allowedHeaders:  [
     "Content-Type",
