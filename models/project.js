@@ -20,6 +20,14 @@ let projectSchema = new mongoose.Schema({
     required: false,
     ref: 'Edge',
   },
+  creationTime: {
+    type: Date,
+    required: true
+  },
+  like: {
+    type: Boolean,
+    required: true
+  }
 });
 
 
