@@ -29,7 +29,7 @@ const { MongoClient } = require('mongodb');
 
 // CORS 옵션 설정
 const corsOptions = {
-  origin:  ['https://phodo.store', 'https://www.phodo.store'], // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
+	origin:  ['https://www.phodo.store', 'https://jungle-front-f14999pts-jinkyojb.vercel.app/'], // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
   allowedHeaders:  [
     "Content-Type",
@@ -241,7 +241,10 @@ initializeDatabases();
 
 activeProjects = new Set(); // 현재 열려있는 방의 목록들을 추적
 
-wsServer.on("connection", async (socket) => {
+wsNamespace = wsServer.of('/ws')
+
+wsNamespace.on("connection", async (socket) => {
+  console.log("연결좀")
   let myRoomName = null;
   let myNickname = null;
 
@@ -328,6 +331,10 @@ wsServer.on("connection", async (socket) => {
       roomObjArr = newRoomObjArr;
     }
   });
+})
+
+  
+ wsServer.on("connection", async (socket) => {
 
   socket.on('yjs-update', async (update) => {
     const projectId = Object.keys(update)[0]; // This will extract the first key in the 'update' object
