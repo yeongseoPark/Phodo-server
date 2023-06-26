@@ -16,28 +16,37 @@ const { value } = require('mongoose/lib/options/propertyOptions');
 const Project = require('../models/project');
 
 // 이미지 파일에서 촬영 시간을 읽는 함수
-async function getImageCreationTime(filePath) {
+function getImageCreationTime(filePath) {
     try {
-        const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
-        const parser = exifParser.create(fileData); // Exif 파서 생성
-        const result = parser.parse(); // Exif 데이터 파싱
+        // Exif 데이터 추출
+        const fileData = fs.readFileSync(filePath);
+        const parser = exifParser.create(fileData);
+        const result = parser.parse();
 
-        // "CreateDate" 필드가 Exif 데이터에 있는지 확인
+        // 파일의 생성 시간 추출
+        const { birthtime } = fs.statSync(filePath);
+        const creationTime = birthtime.toISOString().slice(0, 19);
+
+        // Exif 데이터 내 DateTimeOriginal 필드가 존재하면 해당 시간을 반환
         if (result.tags && result.tags.DateTimeOriginal) {
-            const date = new Date(result.tags.DateTimeOriginal * 1000); // Exif 태그는 Unix 시간으로 저장됨 (초 단위), 자바스크립트는 밀리초 단위로 처리하므로 변환 필요
-            return date.toISOString().slice(0, 19); // '2020-02-21T14:33:16' 형식의 날짜와 시간 문자열 반환
-        } else if (result.tags && result.tags.ModifyDate) {
-            const modifyTime = new Date(result.tags.ModifyDate * 1000);
-            return modifyTime.toISOString().slice(0, 19);
-        } else {
-            // Exif 데이터가 없다면 파일의 생성 시간을 반환
-            const stat = fs.statSync(filePath);
-            const birthTime = stat.birthtime.toISOString().slice(0, 19);
-            return birthTime;
+            const exifTime = new Date(result.tags.DateTimeOriginal * 1000);
+            return exifTime.toISOString().slice(0, 19);
+        }
+
+        // Exif 데이터 내 ModifyDate 필드가 존재하면 해당 시간을 반환
+        else if (result.tags && result.tags.ModifyDate) {
+            const exifModifiedTime = new Date(result.tags.ModifyDate * 1000);
+            return exifModifiedTime.toISOString().slice(0, 19);
+        }
+
+        // Exif 데이터가 없으면 파일의 생성 시간을 반환
+        else {
+            return creationTime;
         }
     } catch (error) {
-        console.error(`Failed to read Exif data: ${error}`);
-        return null;
+        // 파일의 생성 시간 또는 Exif 데이터를 추출하는 과정에서 오류 발생 시 현재 시간 반환
+        console.error(`Failed to get image creation time: ${error}`);
+        return new Date().toISOString().slice(0, 19);
     }
 }
 
