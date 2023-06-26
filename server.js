@@ -29,7 +29,7 @@ const { MongoClient } = require('mongodb');
 
 // CORS 옵션 설정
 const corsOptions = {
-	origin:  ['https://www.phodo.store', 'https://jungle-front-f14999pts-jinkyojb.vercel.app/'], // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
+	origin:  ['chrome-extension://ophmdkgfcjapomjdpfobjfbihojchbko', 'https://www.phodo.store', 'https://jungle-front-f14999pts-jinkyojb.vercel.app/'], // 클라이언트 도메인을 명시적으로 지정하면 보안 상의 이유로 해당 도메인만 요청 허용 가능
   methods: 'GET, POST',
   allowedHeaders:  [
     "Content-Type",
@@ -388,12 +388,47 @@ wsNamespace.on("connection", async (socket) => {
 setInterval(async () => {
   if (activeProjects.size > 0) {
     try {
-      await saveDataToMongoDB(activeProjects, mongoClient, client);
+      await saveDataToMongoDB(activeProjects, mongoClient, client, false);
     } catch (err) {
       console.error("Error saving data to MongoDB:", err);
     }
   }
 }, 15000);
+
+/* 레디스의 메모리가 70%이상이 됐을때에는 레디스의 값을 데이터베이스에 써준다 */
+
+setInterval(async () => {
+  try {
+    // Redis 메모리 정보를 가져옵니다.
+    const info = await client.info('memory');;
+
+    const lines = info.split('\r\n');
+    const memoryInfo = lines.reduce((acc, line) => {
+      const parts = line.split(':');
+      if (parts[1]) {
+        acc[parts[0]] = parseInt(parts[1]);
+      }
+      return acc;
+    }, {});
+
+
+    const usedMemory = memoryInfo.used_memory; // 현재 사용 중인 메모리
+    const maxMemory = memoryInfo.maxmemory; // Redis에서 사용할 수 있는 최대 메모리
+
+    console.log(usedMemory)
+    console.log(maxMemory)
+    console.log(usedMemory / maxMemory)
+
+    // 사용 중인 메모리가 최대 메모리의 70%가 넘는지 확인합니다.
+    if ((usedMemory / maxMemory) > 0.7) {
+      // 만약 넘으면, MongoDB에 데이터를 즉시 저장하고 redis를 비웁니다.
+      await saveDataToMongoDB(activeProjects, mongoClient, client, true);
+    }
+  } catch (err) {
+    console.error("Error:", err);
+  }
+}, 10000);
+
 
 
 httpServer.listen(PORT,() => {

@@ -2,8 +2,35 @@
 const redis = require('redis');
 const { MongoClient } = require('mongodb');
 const Project = require('./models/project')
+  
 
-async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
+
+function deleteAllKeys(callback, client) {
+    const multi = client.multi();
+  
+    multi.keys('*', (err, keys) => {
+      if (err) {
+        console.error("Error getting keys:", err);
+        return callback(err);
+      }
+  
+      keys.forEach((key) => {
+        multi.del(key);
+      });
+  
+      multi.exec((err, replies) => {
+        if (err) {
+          console.error("Error deleting keys:", err);
+          return callback(err);
+        }
+  
+        console.log('All keys deleted');
+        callback(null);
+      });
+    });
+  }
+
+async function saveDataToMongoDB(activeProjects, mongoClient, redisClient, clearRedis) {
 
     // 열려있는 방 목록을 순회
     for (let project of activeProjects) {
@@ -66,6 +93,15 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
             await projectObj.save();
   
             console.log('Data saved to MongoDB successfully.');
+        }
+
+        // clearRedis 플래그가 참일 경우에만 Redis DB를 클리어합니다.
+        if (clearRedis) { 
+            await deleteAllKeys((err) => {
+                if (err) {
+                  console.error("Error deleting keys:", err);
+                }
+              }, redisClient);
         }
     }
 
