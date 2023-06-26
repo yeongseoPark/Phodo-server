@@ -384,11 +384,15 @@ wsNamespace.on("connection", async (socket) => {
   
 });
 
-/* 60초에 한번씩 redis의 값을 database에 써줘야함 */
-setInterval(() => {
+/* 15초에 한번씩 redis의 값을 database에 써준다 */
+setInterval(async () => {
   if (activeProjects.size > 0) {
+    try {
+      await saveDataToMongoDB(activeProjects, mongoClient, client);
+    } catch (err) {
+      console.error("Error saving data to MongoDB:", err);
+    }
   }
-  saveDataToMongoDB(activeProjects, mongoClient, client);
 }, 15000);
 
 
