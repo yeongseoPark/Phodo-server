@@ -5,7 +5,7 @@ const { Storage } = require('@google-cloud/storage');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const { LanguageServiceClient } = require('@google-cloud/language');  // 태그 카테고리 분류
 const { Image } = require('../models/image');   // 이미지 모델 정의
-const sharp = require('sharp'); // image resizing to make 
+const sharp = require('sharp'); // image resizing to make thumbnail
 const fs = require('fs'); // 파일 시스템 모듈
 const exifParser = require('exif-parser');
 const piexif = require('piexifjs'); // 이미지의 exif 데이터를 읽고 쓰는데 사용
@@ -582,6 +582,27 @@ router.post('/galleryDelete', async (req, res) => {
     }
 });
 
+// 태그 검색
+router.post('/tagSearch', async (req, res) => {
+    const tags = req.body.tags;  // 클라이언트가 POST 요청으로 보낸 태그 배열
+    const userId = req.user._id;  // 현재 userId
+    try {
+      // MongoDB에서 userId를 가진 모든 이미지를 찾는다
+      const images = await Image.find({ userId : userId });
+
+      // 태그 배열을 포함하는 이미지만 필터링한다
+      const filteredImages = images.filter(image => 
+        tags.every(tag => image.tags.includes(tag))
+      );
+  
+      // 필터링된 이미지의 URL만 반환한다
+      const imageUrls = filteredImages.map(image => image.url);
+      res.status(200).json(imageUrls);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server Error' });
+    }
+  });
 
 // Phodo 즐겨찾기 라우터 (미완성)
 router.get('/likePhodo', (req, res) => {
