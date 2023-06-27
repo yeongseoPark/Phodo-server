@@ -19,13 +19,18 @@ function isAuthenticatedUser(req, res, next) {
   res.redirect('/login');
 }
 
-router.get('/logincheck', (req, res) => {
-  if (req.isAuthenticated()) {
-    res.json({ isAuthenticated: true });
-  } else {
-    res.json({ isAuthenticated: false });
+router.get('/logincheck', (req, res, next) => {
+  try {
+    if (req.isAuthenticated()) {
+      res.json({ isAuthenticated: true });
+    } else {
+      res.json({ isAuthenticated: false });
+    }
+  } catch (err) {
+    next(err);
   }
 })
+
 
 
 /**
@@ -51,13 +56,18 @@ router.get('/logincheck', (req, res) => {
  *         description: There was an error logging out the user
  */
 router.get('/logout', isAuthenticatedUser ,(req, res, next) => {
-  req.logOut(function(err) {
-    if (err) {
-      return next(err);
-    }
-
-    res.status(200).json({'message': 'logged out'});
-  });
+  try {
+    req.logOut(function(err) {
+      if (err) {
+        return next(err);
+      }
+  
+      res.status(200).json({'message': 'logged out'});
+    });
+  } catch {
+    next(err);
+  }
+  
 });
 
 
