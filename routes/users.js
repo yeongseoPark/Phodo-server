@@ -301,7 +301,6 @@ router.post('/password/change', (req, res) => {
           })
           .catch(err => {
             res.status(400).json({'message': 'ERROR: ' + err});
-
           });
       });
     });
@@ -388,11 +387,8 @@ router.post('/forgot', (req, res, next) => {
         from : '1park4170@gmail.com',
         subject : 'Recovery Email from Auth Project',
         text : 'Please click the following link to recover your passoword: \n\n'+
-                        'http://localhost:3000/reset/'+token+'\n\n'+
+                        'https//www.phodo.store/reset/'+token+'\n\n'+
                         'If you did not request this, please ignore this email.'
-        // text : 'Please click the following link to recover your passoword: \n\n'+
-        //                 'http://localhost:3033/reset/'+token+'\n\n'+
-        //                 'If you did not request this, please ignore this email.'
       };
       smtpTransport.sendMail(mailOptions, err=> {
         res.status(200).json({'message': 'Email send with further instructions. Please check that.'});
