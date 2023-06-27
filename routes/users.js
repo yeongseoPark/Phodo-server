@@ -172,6 +172,7 @@ router.post('/login', (req, res, next) => {
       if (err) {
         return next(err);
       }
+
       // 로그인 성공 시 사용자 정보를 응답에 추가하고 성공 메시지를 전송합니다.
       res.status(200).json({
         message: 'Login succeeded',

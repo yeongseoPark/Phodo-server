@@ -275,22 +275,32 @@ wsNamespace.on("connection", async (socket) => {
       targetRoomObj = {
         roomName,
         currentNum: 0,
-        users: new set(),
+        users: new Set(),
       };
       roomObjArr.push(targetRoomObj);
     }
 
-    //Join the room
-    targetRoomObj.users.add({
-      socketId: socket.id,
-      nickname,
-    });
-    ++targetRoomObj.currentNum;
+    // Create user object
+    const user = { socketId: socket.id, nickname };
 
-    socket.join(roomName);
-    socket.emit("accept_join", [...targetRoomObj.users]);
+    // Convert Set to array
+    const usersArray = Array.from(targetRoomObj.users);
+    console.log(usersArray);
 
-    socket.to(roomName).emit('new_user', { socketId: socket.id, nickname });
+    // Check if user exists
+    if (!usersArray.some(u => u.nickname === user.nickname)) {
+      // User does not exist - add user and emit new_user event
+      targetRoomObj.users.add(user);
+      console.log(Array.from(targetRoomObj.users));
+      ++targetRoomObj.currentNum;
+
+      socket.join(roomName);
+      socket.emit("accept_join", [...targetRoomObj.users]);
+      socket.to(roomName).emit('new_user', user);
+    } else {
+      // User exists - just emit accept_join event
+      socket.emit("accept_join", [...targetRoomObj.users]);
+    }
   });
 
   socket.on("offer", (offer, remoteSocketId, localNickname) => {
@@ -306,6 +316,7 @@ wsNamespace.on("connection", async (socket) => {
   });
 
   socket.on("disconnecting", () => {
+    console.log("새로고침씹ㄹ")
     socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
 
     let isRoomEmpty = false;
