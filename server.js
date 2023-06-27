@@ -317,7 +317,6 @@ wsNamespace.on("connection", async (socket) => {
 
   socket.on("disconnecting", () => {
     console.log("새로고침씹ㄹ")
-    socket.to(myRoomName).emit("leave_room", socket.id, myNickname);
 
     let isRoomEmpty = false;
     for (let i = 0; i < roomObjArr.length; ++i) {
@@ -332,8 +331,11 @@ wsNamespace.on("connection", async (socket) => {
         if (roomObjArr[i].currentNum == 0) {
           isRoomEmpty = true;
         }
+
+        socket.to(myRoomName).emit("leave_room", socket.id, myNickname, [...roomObjArr[i].users]);
       }
     }
+
 
     // Delete room
     if (isRoomEmpty) {
