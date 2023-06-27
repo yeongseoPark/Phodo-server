@@ -186,11 +186,11 @@ router.get('/project', async (req, res) => {
 
         // 각 프로젝트의 _id와 name만 추출
         const projectNamesAndIdsPromises = projects.map(async (project) => { // promise들의 배열 생성
-            const imageUrl = await getRepresentingImgURL(project.nodeId);
+            let imageUrl = await getRepresentingImgURL(project.nodeId);
             // 이미지 없을 때
-            // if (!imageUrl) {
-            //     imageUrl = "https://storage.googleapis.com/jungle_project/1687878175402_no_image.jpeg";
-            // }
+            if (!imageUrl) {
+                imageUrl = "https://storage.googleapis.com/jungle_project/1687878175402_no_image.jpeg";
+            }
             return {
                 _id: project._id,
                 name: project.name,
