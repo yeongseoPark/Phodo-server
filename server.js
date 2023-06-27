@@ -275,20 +275,20 @@ wsNamespace.on("connection", async (socket) => {
       targetRoomObj = {
         roomName,
         currentNum: 0,
-        users: [],
+        users: new set(),
       };
       roomObjArr.push(targetRoomObj);
     }
 
     //Join the room
-    targetRoomObj.users.push({
+    targetRoomObj.users.add({
       socketId: socket.id,
       nickname,
     });
     ++targetRoomObj.currentNum;
 
     socket.join(roomName);
-    socket.emit("accept_join", targetRoomObj.users);
+    socket.emit("accept_join", [...targetRoomObj.users]);
 
     socket.to(roomName).emit('new_user', { socketId: socket.id, nickname });
   });
@@ -311,10 +311,11 @@ wsNamespace.on("connection", async (socket) => {
     let isRoomEmpty = false;
     for (let i = 0; i < roomObjArr.length; ++i) {
       if (roomObjArr[i].roomName === myRoomName) {
-        const newUsers = roomObjArr[i].users.filter(
+        const usersArray = [...roomObjArr[i].users];
+        const newUsers = usersArray.filter(
           (user) => user.socketId != socket.id
         );
-        roomObjArr[i].users = newUsers;
+        roomObjArr[i].users = new Set(newUsers);
         --roomObjArr[i].currentNum;
 
         if (roomObjArr[i].currentNum == 0) {
