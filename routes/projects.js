@@ -21,6 +21,7 @@ router.post('/project', async (req, res) => {
         name: name,
         userIds: [userId],
         creationTime,
+        thumbnail: "https://storage.googleapis.com/jungle_project/1687878175402_no_image.jpeg",
         like: false
     });
 
@@ -186,15 +187,15 @@ router.get('/project', async (req, res) => {
 
         // 각 프로젝트의 _id와 name만 추출
         const projectNamesAndIdsPromises = projects.map(async (project) => { // promise들의 배열 생성
-            let imageUrl = await getRepresentingImgURL(project.nodeId);
-            // 이미지 없을 때
-            if (!imageUrl) {
-                imageUrl = "https://storage.googleapis.com/jungle_project/1687878175402_no_image.jpeg";
-            }
+            // let imageUrl = await getRepresentingImgURL(project.nodeId);
+            // // 이미지 없을 때
+            // if (!imageUrl) {
+            //     imageUrl = "https://storage.googleapis.com/jungle_project/1687878175402_no_image.jpeg";
+            // }
             return {
                 _id: project._id,
                 name: project.name,
-                image : imageUrl,
+                image : project.thumbnail,
                 time: project.creationTime,
                 like: project.like
             };
@@ -207,6 +208,25 @@ router.get('/project', async (req, res) => {
         res.status(200).json(projectNamesAndIds);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+router.patch('/project/thumbnail', async (req, res) => {
+    try {
+        const projectId = req.body.projectId;
+        const newThumbnail = req.body.thumbnail;
+
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
+        }
+        project.thumbnail = newThumbnail;
+
+        await project.save();
+
+        res.status(200).json({ thumbnail : project.thumbnail });
+    } catch (err) {
+        res.status(500).json({ err: err.message })
     }
 });
 

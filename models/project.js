@@ -24,6 +24,10 @@ let projectSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  thumbnail: {
+    type: String,
+    required: false
+  },
   like: {
     type: Boolean,
     required: true
