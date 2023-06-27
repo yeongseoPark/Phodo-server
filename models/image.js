@@ -24,7 +24,7 @@ const imageSchema = new mongoose.Schema({
   },
   time : {
     type : Date,
-    required : true,
+    required : false,
   },
   location : {
     type : String,

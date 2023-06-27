@@ -30,22 +30,25 @@ function getImageCreationTime(filePath) {
         // Exif 데이터 내 DateTimeOriginal 필드가 존재하면 해당 시간을 반환
         if (result.tags && result.tags.DateTimeOriginal) {
             const exifTime = new Date(result.tags.DateTimeOriginal * 1000);
+            console.log("EXIFTIME으로 들어갔다")
             return exifTime.toISOString().slice(0, 19);
         }
 
         // Exif 데이터 내 ModifyDate 필드가 존재하면 해당 시간을 반환
         else if (result.tags && result.tags.ModifyDate) {
             const exifModifiedTime = new Date(result.tags.ModifyDate * 1000);
+            console.log("EXIFMODIFIEDTIME으로 들어갔다")
             return exifModifiedTime.toISOString().slice(0, 19);
         }
 
         // Exif 데이터가 없으면 파일의 생성 시간을 반환
         else {
+            console.log("CREATIONTIME으로 들어갔다")
             return creationTime;
         }
     } catch (error) {
         // 파일의 생성 시간 또는 Exif 데이터를 추출하는 과정에서 오류 발생 시 현재 시간 반환
-        console.error(`Failed to get image creation time: ${error}`);
+        console.error(`There is no creationTime, returns currentTime: ${error}`);
         return new Date().toISOString().slice(0, 19);
     }
 }
@@ -387,7 +390,7 @@ router.post('/upload', (req, res) => {
                 const imageCreationTime = await getImageCreationTime(tmpFilePath);
                 // let createtime;
                 // if (!imageCreationTime) { // Exif 데이터에서 촬영 시간을 가져오지 못했을 때의 처리
-                //     createtime = ""  // 빈 문자열 설정
+                //     createtime = new Date().toISOString().slice(0, 19);
                 //     // res.status(500).json({ error: 'Failed to read image creation time from Exif data' });
                 //     // return;
                 // }
