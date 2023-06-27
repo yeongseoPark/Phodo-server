@@ -188,7 +188,7 @@ router.get('/project', async (req, res) => {
         const projectNamesAndIdsPromises = projects.map(async (project) => { // promise들의 배열 생성
             const imageUrl = await getRepresentingImgURL(project.nodeId);
             if (!imageUrl) {
-                imageUrl = "./no_image.jpeg";
+                // imageUrl = "./no_image.jpeg";
             }
             return {
                 _id: project._id,
