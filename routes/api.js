@@ -47,7 +47,7 @@ async function getImageMetadata(filePath) {
         if (gpsData && gpsData[piexif.GPSIFD.GPSLatitude] && gpsData[piexif.GPSIFD.GPSLongitude]) {
             const latitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLatitude], gpsData[piexif.GPSIFD.GPSLatitudeRef]);
             const longitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLongitude], gpsData[piexif.GPSIFD.GPSLongitudeRef]);
-            return { creationTime, location: { latitude, longitude }};
+            return { creationTime, location: { latitude, longitude } };
         } else {
             // Exif 데이터에 GPS 정보가 없을 경우 null 반환
             return { creationTime, location: null };
@@ -234,9 +234,7 @@ router.post('/upload', (req, res) => {
     try {
 
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
-        // console.log(req.user);
         const userId = req.user._id;
-
         // 클라이언트로부터 이미지 파일 받기
         let images = req.files.image;
 
@@ -420,7 +418,7 @@ router.get('/gallery', async (req, res) => {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
         // console.log(req.user)
         const userId = req.user._id;
-	console.log("유저: ", req.user);
+        console.log("유저: ", req.user);
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
         const imagesQuery = Image.find({ userId: userId })  // find 메서드의 결과로 쿼리가 생성됨
@@ -558,48 +556,142 @@ router.post('/galleryDelete', async (req, res) => {
 
 // 태그 검색
 router.post('/tagSearch', async (req, res) => {
-    
+
     try {
         const tags = req.body.tags;  // 클라이언트가 POST 요청으로 보낸 태그 배열
         const userId = req.user._id;  // 현재 userId  
 
-      // MongoDB에서 userId를 가진 모든 이미지를 찾는다
-      const images = await Image.find({ userId : userId });
+        // MongoDB에서 userId를 가진 모든 이미지를 찾는다
+        const images = await Image.find({ userId: userId });
 
-      // 태그 배열을 포함하는 이미지만 필터링한다
-      const filteredImages = images.filter(image => 
-        tags.every(tag => image.tags.includes(tag))
-      );
-  
-      // 필터링된 이미지의 URL만 반환한다
-      const imageUrls = filteredImages.map(image => image.url);
-      res.status(200).json(imageUrls);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Server Error' });
-    }
-  });
-
-// Phodo 즐겨찾기 라우터 (미완성)
-router.get('/likePhodo', (req, res) => {
-    try {
-
-        res.status(200).json(
-            [
-                {
-                    "name": "좋아하는 포도",
-                    "id": "1"
-                },
-                {
-                    "name": "강아지 포도",
-                    "id": "2"
-                }
-            ]
+        // 태그 배열을 포함하는 이미지만 필터링한다
+        const filteredImages = images.filter(image =>
+            tags.every(tag => image.tags.includes(tag))
         );
 
-    } catch (err) {
+        // 필터링된 이미지의 URL만 반환한다
+        const imageUrls = filteredImages.map(image => image.url);
+        res.status(200).json(imageUrls);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// test code
+router.post('/test', (req, res) => {
+    try {
+        let image = req.files.image;
+        // 이미지 파일 업로드
+        const bucket = storage.bucket('jungle_project');    // Cloud Storage 버킷 이름(jungle_project)
+        const gcsFileName = `${Date.now()}_${image.name}`;  // 업로드할 이미지에 고유한 이름 생성
+        const file = bucket.file(gcsFileName);              // Cloud Storage에 업로드할 파일 생성
+        const stream = file.createWriteStream({             // 이미지 파일을 Stream 형식으로 작성
+            metadata: {   // 파일의 메타 데이터 생성
+                contentType: image.mimetype,
+            },
+            resumable: false,   // 일시 중지된 업로드를 지원할지 여부 결정
+        });
+
+        // 이미지 업로드 완료 처리(1) : 오류 발생 시 - 응답코드 400
+        stream.on('error', (err) => {
+            console.error(err);
+            res.status(400).json({ error: 'Failed to upload image' });
+        });
+
+        // 이미지 업로드 완료 처리(2) : 업로드 완료 시 (스트림이 모든 데이터를 업로드 한 후)
+        stream.on('finish', async () => {
+            // 업로드한 이미지 url 생성
+            const imageUrl = `https://storage.googleapis.com/jungle_project/${gcsFileName}`;
+
+            // Google Cloud Vision API로 이미지 태그 생성
+            const [result] = await vision.labelDetection(imageUrl);
+            const labels = result.labelAnnotations;
+
+            // labels에서 이름 추출
+            const Tags = [];
+            const TagsGoodscore = [];
+            // 딕셔너리 선언(output.json)
+            // const dictionary = require('../label_classification/output.json');
+
+            labels.forEach((label) => {      
+                Tags.push(label.description.toLowerCase());
+                if (label.score >= 0.8) {
+                    TagsGoodscore.push(label.description.toLowerCase());
+                }
+            });
+
+            // Natural Language API를 사용해서 카테고리(범주) 분류
+            const document = {
+                content: Tags.join(' '), // 태그들을 공백으로 구분하여 하나의 문자열로 합침
+                type: 'PLAIN_TEXT',
+            };
+
+            // google natural language api version 지정
+            const classificationModelOptions = {
+                v2Model: {
+                    contentCategoriesVersion: 'V2',
+                },
+            };
+
+            // 추출한 태그들의 카테고리 분류
+            const [classification] = await language.classifyText({ document, classificationModelOptions, });
+            const categories = classification.categories.map(category => category.name);  // 가장 신뢰도 높은 카테고리 추출
+
+            // 카테고리의 중분류, 소분류를 태그로 추출해서 TagsGoodscore 앞에 삽입
+            const updatedTags = [];
+            const allimageCategory = [];
+            categories.forEach((category) => {
+                const segments = category.split('/').filter(Boolean);   // '/' 기준 분리 및 빈 문자열 제거
+                // DB에 넣을 카테고리 분류
+                changeCategory = Classification(segments);
+                allimageCategory.push(changeCategory);
+
+                // 중분류와 소분류만 따로 자르기
+                let values = segments.slice(1);
+
+                // 대분류만 존재할 경우
+                if (!values) {
+                    values = segments.split('&').map(value => value.trim());
+                }
+                // 중분류와 소분류를 다시 나누기
+                else {
+                    for (let i = 0; i < values.length; i++) {
+                        if (values[i].includes('&')) {
+                            const subValues = values[i].split('&').map(value => value.trim());  // '&' 기준 분리 및 공백 제거
+                            values.splice(i, 1, ...subValues);  // values 값을 subValues 값으로 대체
+                            i += subValues.length - 1;
+                        }
+                    }
+                }
+                // 추출된 값들 중 'Other' 항목 제거
+                values = values.filter(value => value !== 'Other');
+                // updatedTags에 values들 추가
+                values.forEach((value) => {
+                    updatedTags.push(value.toLowerCase());
+                });
+            });
+
+            // TagsGoodscore 리스트의 앞에 추가
+            const allUpdatedTags = [...updatedTags, ...TagsGoodscore];
+
+            // 최종 태그 값들 중복값 제거
+            const updatedTagsSet = new Set(allUpdatedTags);
+            const imageTags = [...updatedTagsSet];
+
+            // 최종 카테고리 값들 중복값 제거
+            const imageCategorySet = new Set(allimageCategory);
+            const imageCategory = [...imageCategorySet];
+            res.status(200).json({ category: imageCategory, tags: imageTags, });
+        });
+        // 이미지 파일 스트림 종료 및 업로드 완료
+        // end 메서드 : 스트림을 종료하고 작업을 완료, image.data : 이미지 데이터 자체.
+        stream.end(image.data);
+        // 성공 시 : 상태코드 200과 성공 메세지 전
+        
+    } catch (err) {  // 실패 시 : 상태코드 500과 에러 메세지 전달
         console.error(err);
-        res.status(500).json({ error: 'Failed to load your Phodos' });
+        res.status(500).json({ error: 'Failed to save image URL' });
     }
 });
 
