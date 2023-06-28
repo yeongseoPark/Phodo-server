@@ -15,11 +15,12 @@ const { default: axios } = require('axios');
 const { value } = require('mongoose/lib/options/propertyOptions');
 const Project = require('../models/project');
 
-// 이미지 파일에서 촬영 시간을 읽는 함수
-function getImageCreationTime(filePath) {
+// 이미지에서 생성 시간과 위치를 반환하는 함수
+async function getImageMetadata(filePath) {
     try {
-        // Exif 데이터 추출
-        const fileData = fs.readFileSync(filePath);
+        const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
+        const exifData = piexif.load(fileData.toString("binary"));  // fileData를 바이너리 형식으로 변환하고, 이미지 파일의 exif 데이터를 읽어 옴.
+
         const parser = exifParser.create(fileData);
         const result = parser.parse();
 
@@ -30,35 +31,15 @@ function getImageCreationTime(filePath) {
         // Exif 데이터 내 DateTimeOriginal 필드가 존재하면 해당 시간을 반환
         if (result.tags && result.tags.DateTimeOriginal) {
             const exifTime = new Date(result.tags.DateTimeOriginal * 1000);
-            console.log("EXIFTIME으로 들어갔다")
             return exifTime.toISOString().slice(0, 19);
         }
 
         // Exif 데이터 내 ModifyDate 필드가 존재하면 해당 시간을 반환
         else if (result.tags && result.tags.ModifyDate) {
             const exifModifiedTime = new Date(result.tags.ModifyDate * 1000);
-            console.log("EXIFMODIFIEDTIME으로 들어갔다")
             return exifModifiedTime.toISOString().slice(0, 19);
         }
 
-        // Exif 데이터가 없으면 파일의 생성 시간을 반환
-        else {
-            console.log("CREATIONTIME으로 들어갔다")
-            return creationTime;
-        }
-    } catch (error) {
-        // 파일의 생성 시간 또는 Exif 데이터를 추출하는 과정에서 오류 발생 시 현재 시간 반환
-        console.error(`There is no creationTime, returns currentTime: ${error}`);
-        return new Date().toISOString().slice(0, 19);
-    }
-}
-
-
-// 이미지 파일에서 GPS 정보를 읽는 함수
-async function getImageLocation(filePath) {
-    try {
-        const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
-        const exifData = piexif.load(fileData.toString("binary"));  // fileData를 바이너리 형식으로 변환하고, 이미지 파일의 exif 데이터를 읽어 옴.
         const gpsData = exifData['GPS'];  // GPS 관련 데이터 추출
 
         // GPS 관련 정보 (GPSLatitude, GPSLongitude)가 exif 데이터에 존재하는지 확인
@@ -66,16 +47,17 @@ async function getImageLocation(filePath) {
         if (gpsData && gpsData[piexif.GPSIFD.GPSLatitude] && gpsData[piexif.GPSIFD.GPSLongitude]) {
             const latitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLatitude], gpsData[piexif.GPSIFD.GPSLatitudeRef]);
             const longitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLongitude], gpsData[piexif.GPSIFD.GPSLongitudeRef]);
-            return { latitude, longitude };
+            return { creationTime, location: { latitude, longitude }};
         } else {
             // Exif 데이터에 GPS 정보가 없을 경우 null 반환
-            return null;
+            return { creationTime, location: null };
         }
     } catch (error) {
-        console.error(`Failed to read GPS data from Exif: ${error}`);
-        return null;
+        console.error(`Failed to read metadata from Exif: ${error}`);
+        return { creationTime: new Date().toISOString().slice(0, 19), location: null };
     }
 }
+
 
 // Exif GPS 좌표 형식(DMS)을 십진수 형식(DD)으로 변환하는 함수
 // ex) 127° 18' 45" E 를 숫자(좌표)로 변환
@@ -386,17 +368,9 @@ router.post('/upload', (req, res) => {
                 const imageCategorySet = new Set(allimageCategory);
                 const imageCategory = [...imageCategorySet];
 
-                // Exif 데이터에서 촬영 시간 가져오기
-                const imageCreationTime = await getImageCreationTime(tmpFilePath);
-                // let createtime;
-                // if (!imageCreationTime) { // Exif 데이터에서 촬영 시간을 가져오지 못했을 때의 처리
-                //     createtime = new Date().toISOString().slice(0, 19);
-                //     // res.status(500).json({ error: 'Failed to read image creation time from Exif data' });
-                //     // return;
-                // }
+                // Exif 데이터에서 촬영 시간, 위치 가져오기
+                const { creationTime: imageCreationTime, location: imageLocation } = await getImageMetadata(tmpFilePath);
 
-                // Exif 데이터에서 장소 정보 가져오기
-                const imageLocation = await getImageLocation(tmpFilePath);
                 let address;
                 if (imageLocation == null) {
                     address = "" // 빈 문자열 설정
