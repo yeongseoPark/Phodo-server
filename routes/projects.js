@@ -230,28 +230,32 @@ router.patch('/project/thumbnail', async (req, res) => {
 });
 
 // like project
-router.patch('/project/like/:projectId', async (req, res) => {
+router.patch('/project/like', async (req, res) => {
     try {
-        const projectId = req.params.projectId;
-        
-        // 프로젝트를 찾습니다
-        const project = await Project.findById(projectId);
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found.' });
-        }
-        
-        // 좋아요 상태를 업데이트합니다
-        project.like = !project.like;
-        
-        // 변경사항을 저장합니다
-        await project.save();
-        
-        // 결과를 반환합니다
-        res.status(200).json({ like: project.like });
+      // console.log(req)
+      const projectId = req.body.projectId;
+      const isLike = req.body.isLike;
+  
+      // 프로젝트를 찾습니다
+      const project = await Project.findById(projectId);
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found.' });
+      }
+  
+      // 좋아요 상태를 업데이트합니다
+      project.like = isLike;
+  
+      console.log(projectId, project.like)
+  
+      // 변경사항을 저장합니다
+      await project.save();
+  
+      // 결과를 반환합니다
+      res.status(200).json({ like: project.like });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+      res.status(500).json({ error: err.message });
     }
-});
+  });
 
 
 
