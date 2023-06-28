@@ -188,10 +188,6 @@ router.get('/project', async (req, res) => {
         // 각 프로젝트의 _id와 name만 추출
         const projectNamesAndIdsPromises = projects.map(async (project) => { // promise들의 배열 생성
             // let imageUrl = await getRepresentingImgURL(project.nodeId);
-            // // 이미지 없을 때
-            // if (!imageUrl) {
-            //     imageUrl = "https://storage.googleapis.com/jungle_project/1687878175402_no_image.jpeg";
-            // }
             return {
                 _id: project._id,
                 name: project.name,
@@ -233,7 +229,6 @@ router.patch('/project/thumbnail', async (req, res) => {
 // like project
 router.patch('/project/like', async (req, res) => {
     try {
-      // console.log(req)
       const projectId = req.body.projectId;
       const isLike = req.body.isLike;
   
@@ -245,8 +240,6 @@ router.patch('/project/like', async (req, res) => {
   
       // 좋아요 상태를 업데이트합니다
       project.like = isLike;
-  
-      console.log(projectId, project.like)
   
       // 변경사항을 저장합니다
       await project.save();
@@ -262,7 +255,6 @@ router.patch('/project/like', async (req, res) => {
 
 // Rename project
 router.patch('/project/:projectId', async (req, res) => {
-    
     try {
         const projectId = req.params.projectId;
         const newName = req.body.name;
@@ -287,7 +279,6 @@ router.patch('/project/:projectId', async (req, res) => {
 
 // Delete project
 router.delete('/project/:projectId', async (req, res) => {
-    
     try {
         const projectId = req.params.projectId;
         const userId = req.user._id;
