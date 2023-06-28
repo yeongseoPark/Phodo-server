@@ -225,6 +225,7 @@ router.patch('/project/thumbnail', async (req, res) => {
         if (!project) {
             return res.status(404).json({ message: 'Project not found.' });
         }
+        console.log("thumbnail change: ", project.name);
 
         const bucket = storage.bucket('jungle_project');
         const gcsFileName = `${Date.now()}_${image.name}`;
