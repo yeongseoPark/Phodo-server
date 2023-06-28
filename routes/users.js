@@ -19,13 +19,18 @@ function isAuthenticatedUser(req, res, next) {
   res.redirect('/login');
 }
 
-router.get('/logincheck', (req, res) => {
-  if (req.isAuthenticated()) {
-    res.json({ isAuthenticated: true });
-  } else {
-    res.json({ isAuthenticated: false });
+router.get('/logincheck', (req, res, next) => {
+  try {
+    if (req.isAuthenticated()) {
+      res.json({ isAuthenticated: true });
+    } else {
+      res.json({ isAuthenticated: false });
+    }
+  } catch (err) {
+    next(err);
   }
 })
+
 
 
 /**

@@ -316,8 +316,6 @@ wsNamespace.on("connection", async (socket) => {
   });
 
   socket.on("disconnecting", () => {
-    console.log("새로고침씹ㄹ")
-
     let isRoomEmpty = false;
     for (let i = 0; i < roomObjArr.length; ++i) {
       if (roomObjArr[i].roomName === myRoomName) {
