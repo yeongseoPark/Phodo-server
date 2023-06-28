@@ -8,6 +8,14 @@ const nodemailer = require('nodemailer');
 const Node = require('../models/node');
 const mongoose = require('mongoose');
 const ObjectId = mongoose.Types.ObjectId;
+const { Storage } = require('@google-cloud/storage');
+const path = require('path');
+
+// Google Cloud Storage 클라이언트 생성 및 인증 정보 설정
+const storage = new Storage({
+    keyFilename: path.join(__dirname, '../rich-wavelet-388908-dad58487deb3.json'), // 서비스 계정 키 파일 경로 설정
+    projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
+});
 
 // Create new project
 router.post('/project', async (req, res) => {
@@ -207,24 +215,45 @@ router.get('/project', async (req, res) => {
     }
 });
 
+// 프로젝트 썸네일 변경
 router.patch('/project/thumbnail', async (req, res) => {
     try {
         const projectId = req.body.projectId;
-        const newThumbnail = req.body.thumbnail;
+        const image = req.files.thumbnail;
 
         const project = await Project.findById(projectId);
         if (!project) {
             return res.status(404).json({ message: 'Project not found.' });
         }
-        project.thumbnail = newThumbnail;
 
-        await project.save();
+        const bucket = storage.bucket('jungle_project');
+        const gcsFileName = `${Date.now()}_${image.name}`;
+        const file = bucket.file(gcsFileName);
+        const stream = file.createWriteStream({
+            metadata: {
+                contentType: image.mimetype,
+            },
+            resumable: false,
+        });
 
-        res.status(200).json({ thumbnail : project.thumbnail });
+        stream.on('error', (err) => {
+            console.error(err);
+            res.status(400).json({ error: 'Failed to upload image' });
+        });
+
+        stream.on('finish', async () => {
+            const imageUrl = `https://storage.googleapis.com/jungle_project/${gcsFileName}`;
+            project.thumbnail = imageUrl;
+            await project.save();
+            res.status(200).json({ thumbnail : project.thumbnail });
+        });
+
+        stream.end(image.data);
     } catch (err) {
         res.status(500).json({ err: err.message })
     }
 });
+
 
 // like project
 router.patch('/project/like', async (req, res) => {
