@@ -168,13 +168,13 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.log(err));
 
-  // GLOBAL ERROR HANDLER
+// GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error(err.stack);
   const defaultErr = {
-    log: 'Express error handler caught unknown middleware error' + err,
+    log: 'Express error handler caught unknown middleware error',
     status: 400,
-    message: { err: 'An error occurred :' + err },
+    message: { err: 'An error occurred' },
   };
   const errorObj = Object.assign({}, defaultErr, err);
   console.log(errorObj.log);
@@ -393,7 +393,7 @@ wsNamespace.on("connection", async (socket) => {
           if (err) console.error(err);
         });
       }
-    }
+    } 
     catch {
       console.error('Error occurred in yjs-update event handler:', err);
     }

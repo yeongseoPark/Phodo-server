@@ -11,20 +11,21 @@ const ObjectId = mongoose.Types.ObjectId;
 
 // Create new project
 router.post('/project', async (req, res) => {
+
     try {
         const name = req.body.name; // body.name으로 새 프로젝트의 이름 받기
         const userId = req.user._id; // 요청한 user의 id 받아오기
         const creationTime = new Date(Date.now());
-
+    
         // 새 프로젝트 생성
         const newProject = new Project({
-          name: name,
-          userIds: [userId],
-          creationTime,
-          thumbnail: "https://storage.googleapis.com/jungle_project/1687878175402_no_image.jpeg",
-          like: false
-         });
-   
+            name: name,
+            userIds: [userId],
+            creationTime,
+            thumbnail: "https://storage.googleapis.com/jungle_project/1687878175402_no_image.jpeg",
+            like: false
+        });
+
         const savedProject = await newProject.save(); // 새 프로젝트 DB에 저장
         
         const user = await User.findById(userId); 
@@ -261,6 +262,7 @@ router.patch('/project/like', async (req, res) => {
 
 // Rename project
 router.patch('/project/:projectId', async (req, res) => {
+    
     try {
         const projectId = req.params.projectId;
         const newName = req.body.name;
@@ -285,6 +287,7 @@ router.patch('/project/:projectId', async (req, res) => {
 
 // Delete project
 router.delete('/project/:projectId', async (req, res) => {
+    
     try {
         const projectId = req.params.projectId;
         const userId = req.user._id;
