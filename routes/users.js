@@ -56,6 +56,7 @@ router.get('/logout', isAuthenticatedUser ,(req, res, next) => {
       return next(err);
     }
 
+    console.log('로그아웃')
     res.status(200).json({'message': 'logged out'});
   });
 });

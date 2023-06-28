@@ -85,10 +85,10 @@ router.post('/project/:projectId', async(req, res) => {
 router.get('/project/:projectId', async(req, res) => { 
     try {
         const project = await Project.findById(req.params.projectId);
-        console.log(project.nodeId)
 
-        const node = await Node.findById(project.nodeId);
-        const edge = await Edge.findById(project.edgeId);
+        const node = project?.nodeId ? await Node.findById(project.nodeId) : null;
+
+        const edge = project?.edgeId ? await Edge.findById(project.edgeId) : null;
 
         let nodeInfo = node ? node.info : undefined;
         let edgeInfo = edge ? edge.info : undefined;
