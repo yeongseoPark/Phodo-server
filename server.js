@@ -156,6 +156,18 @@ app.use('', require('./routes/nodes'));
 // UNKNOWN ROUTE HANDLER
 app.use((req, res) => res.status(404).send('404 Not Found'));
 
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.json());
+app.set('views', path.join(__dirname, '../client/views'));
+
+// MONGODB CONNECTION
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.log(err));
+
 // GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -168,18 +180,6 @@ app.use((err, req, res, next) => {
   console.log(errorObj.log);
   return res.status(errorObj.status).json(errorObj.message);
 });
-
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(bodyParser.json());
-app.set('views', path.join(__dirname, '../client/views'));
-
-// MONGODB CONNECTION
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.log(err));
 
 /* ------------- ---------  socket 코드  ---  -------------------------- */
 app.set("view engine", "pug");
@@ -351,51 +351,55 @@ wsNamespace.on("connection", async (socket) => {
  wsServer.on("connection", async (socket) => {
 
   socket.on('yjs-update', async (update) => {
-    const projectId = Object.keys(update)[0]; // This will extract the first key in the 'update' object
-    const count = update[projectId].yjsDoc.count; // 현재 방의 인원수
-    // const projectObj = await Project.findById(project);
-    const yjsDoc = update[projectId].yjsDoc;
+    try {
+      const projectId = Object.keys(update)[0]; // This will extract the first key in the 'update' object
+      const count = update[projectId].yjsDoc.count; // 현재 방의 인원수
+      // const projectObj = await Project.findById(project);
+      const yjsDoc = update[projectId].yjsDoc;
+      
+      /* 더이상 남아있는 사람이 없으므로, yjsDoc 내용 바로 DB에 쓰고, 레디스의 값은 지워줘야 함 */ 
+      if (count <= 0) { 
+        const db = mongoClient.db('phodo');
+        
+        // DB에 노드 저장
+        const nodeCollection = db.collection('nodes');
+        let updateResult = await nodeCollection.updateOne(
+          { projectId: projectId },
+          { $set: { "info" : JSON.stringify(yjsDoc.node) }},
+          {upsert: true}
+        );
     
-    /* 더이상 남아있는 사람이 없으므로, yjsDoc 내용 바로 DB에 쓰고, 레디스의 값은 지워줘야 함 */ 
-    if (count <= 0) { 
-      const db = mongoClient.db('phodo');
-      
-      // DB에 노드 저장
-      const nodeCollection = db.collection('nodes');
-      let updateResult = await nodeCollection.updateOne(
-        { projectId: projectId },
-        { $set: { "info" : JSON.stringify(yjsDoc.node) }},
-        {upsert: true}
-      );
-  
-      // DB에 엣지 저장
-      const edgeCollection = db.collection('edges');
-      updateResult = await edgeCollection.updateOne(
-        { projectId: projectId },
-        { $set: { "info" : JSON.stringify(yjsDoc.node) }},
-        {upsert: true}
-      );
-  
-      // Redis에서 해당 projectId의 데이터를 삭제
-      client.del(projectId, function(err, response) {
-        if (err) {
-          console.log(err);
-        }
-      });
-  
-      // activeProjects에서 해당 projectId를 삭제
-      activeProjects.delete(projectId);
-      
-    } else { /* redis에 데이터 저장 */  
-      activeProjects.add(projectId)
-  
-      const yjsDocToString = await JSON.stringify(yjsDoc);
-      await client.set(projectId, yjsDocToString, (err) => {
-        if (err) console.error(err);
-      });
+        // DB에 엣지 저장
+        const edgeCollection = db.collection('edges');
+        updateResult = await edgeCollection.updateOne(
+          { projectId: projectId },
+          { $set: { "info" : JSON.stringify(yjsDoc.node) }},
+          {upsert: true}
+        );
+    
+        // Redis에서 해당 projectId의 데이터를 삭제
+        client.del(projectId, function(err, response) {
+          if (err) {
+            console.log(err);
+          }
+        });
+    
+        // activeProjects에서 해당 projectId를 삭제
+        activeProjects.delete(projectId);
+        
+      } else { /* redis에 데이터 저장 */  
+        activeProjects.add(projectId)
+    
+        const yjsDocToString = await JSON.stringify(yjsDoc);
+        await client.set(projectId, yjsDocToString, (err) => {
+          if (err) console.error(err);
+        });
+      }
+    } 
+    catch {
+      console.error('Error occurred in yjs-update event handler:', err);
     }
   });
-  
 });
 
 /* 60초에 한번씩 redis의 값을 database에 써줘야함 */

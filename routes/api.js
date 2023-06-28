@@ -584,9 +584,11 @@ router.post('/galleryDelete', async (req, res) => {
 
 // 태그 검색
 router.post('/tagSearch', async (req, res) => {
-    const tags = req.body.tags;  // 클라이언트가 POST 요청으로 보낸 태그 배열
-    const userId = req.user._id;  // 현재 userId
+    
     try {
+        const tags = req.body.tags;  // 클라이언트가 POST 요청으로 보낸 태그 배열
+        const userId = req.user._id;  // 현재 userId  
+
       // MongoDB에서 userId를 가진 모든 이미지를 찾는다
       const images = await Image.find({ userId : userId });
 
