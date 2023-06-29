@@ -87,26 +87,30 @@ router.post('/project/report', async (req, res) => {
         let result = nodeInfo.reduce((acc, item) => {
             if (item.data) {
                 if (item.data.title) {
-                    acc.push(item.data.title);
+                    acc.texts.push(item.data.title);
                 }
                 if (item.data.content) {
-                    acc.push(item.data.content);
+                    acc.texts.push(item.data.content);
                 }
                 if (item.data.memo) {
-                    acc.push(item.data.memo);
+                    acc.texts.push(item.data.memo);
+                }
+                if (item.data.url) {
+                    acc.urls.push(item.data.url);
                 }
             }
             return acc;
-        }, []);
+        }, { texts: [], urls: [] });
 
-        const prompt = result.join(", ");
+        const prompt = result.texts.join(", ");
         console.log(prompt);
         const response = await callChatGPT(prompt);
 
         res.status(200).json({
             title : project.name,
             presenter : userName,
-            content : response
+            content : response,
+            urls : result.urls
          });
 
     } catch (err) {
