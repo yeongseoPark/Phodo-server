@@ -99,7 +99,7 @@ router.post('/project/report', async (req, res) => {
                     acc.texts.push(item.data.memo);
                 }
                 if (item.data.url) {
-                    acc.urls.push(item.data.url);
+                    acc.urls.add(item.data.url);
                 }
             }
             return acc;
