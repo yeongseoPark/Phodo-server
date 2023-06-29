@@ -112,7 +112,7 @@ router.post('/project/report', async (req, res) => {
             title : project.name,
             presenter : userName,
             content : response,
-            urls : result.urls
+            urls : new Set(result.urls)
          });
 
     } catch (err) {
