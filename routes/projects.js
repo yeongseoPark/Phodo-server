@@ -55,16 +55,19 @@ async function callChatGPT(prompt) {
         const openai = new OpenAIApi(configuration);
 
         const response = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo", // Text Completion : 대화가 아닌 글
+            model: "gpt-3.5-turbo",
             messages: [
-                { 
-                    role : 'system',
-                    content : '당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.'
-                }, 
-                {   role: "user", 
-                    content: `당신이 보고서의 기반으로 사용해야 하는 값들은 쉼표(,)로 구분되며, 기반 값들의 끝은 "||"로 주어집니다. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 :   ${prompt} || 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 앞서 제공된 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 보고서 작성 과정은 다음과 같습니다. 먼저, 적절한 보고서 초안을 생각해보고 또 다른 초안을 작성합니다. 그런 다음 두 초안을 비교하고 두 초안을 합쳐서 최종 초안을 만드세요. 최종 보고서는 어디서든 적용될 수 있어야 하기 때문에 반드시 "\n" 등의 개행 문자를 빼고 제공해주세요. 또한 반드시 30초 이내에 응답이 완료돼야 합니다. 그 이상 생각하지 마세요 ` 
-                }],
-        });
+              {
+                role: "system",
+                content:
+                  "당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.",
+              },
+              {
+                role: "user",
+                content: `당신이 보고서의 기반으로 사용해야 하는 값들은 쉼표(,)로 구분되며, 기반 값들의 끝은 "||"로 주어집니다. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 :   ${prompt} || 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 앞서 제공된 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 최종 보고서 초안을 작성해주세요. "보고서 작성 과정"이 아닌, "완성된 보고서" 를 응답해주세요`,
+              },
+            ],
+          });
 
         return response.data.choices[0].message;
     } catch (error) {
@@ -108,10 +111,15 @@ router.post('/project/report', async (req, res) => {
         console.log(prompt);
         const response = await callChatGPT(prompt);
 
+        console.log(response)
+        const contentResponse = response.content
+        const stringResponse = JSON.stringify(contentResponse)
+        const finalResponse = await stringResponse.replace(/\\n/g, "");
+
         res.status(200).json({
             title : project.name,
             presenter : userName,
-            content : response,
+            content : finalResponse,
             urls : Array.from(result.urls)
          });
 
