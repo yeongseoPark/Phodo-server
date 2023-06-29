@@ -13,7 +13,7 @@ async function callChatGPT(prompt) {
 
         const response = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
-            messages: [{role: "user", content: "Hello world"}],
+            messages: [{role: "user", content: prompt}],
         });
 
         return response.data.choices[0].message;
