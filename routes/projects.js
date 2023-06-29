@@ -114,7 +114,8 @@ router.post('/project/report', async (req, res) => {
         console.log(response)
         const contentResponse = response.content
         const stringResponse = JSON.stringify(contentResponse)
-        const finalResponse = await stringResponse.replace(/\\n/g, "");
+        let finalResponse = await stringResponse.replace(/\\n/g, "");
+        finalResponse = await finalResponse.replace(/\\+/g, "");
 
         res.status(200).json({
             title : project.name,
