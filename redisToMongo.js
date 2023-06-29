@@ -28,9 +28,8 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
   
             // MongoDB에 데이터 저장
             const db = await mongoClient.db('phodo');
-  
             const nodeCollection = await db.collection('nodes');
-            console.log(DataToObject['node'])
+            
             let updateResult = await nodeCollection.updateOne(
                 { projectId: project },  // Update based on the projectId
                 { $set: { info: JSON.stringify(DataToObject['node']) } },
@@ -49,6 +48,8 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
             projectObj.nodeId = id;
   
             const edgeCollection = await db.collection('edges');
+	    console.log('엣지 :', DataToObject['edge']);
+	    console.log('노드 :', DataToObject['node']);
             updateResult = await edgeCollection.updateOne(
                 { projectId: project },  // Update based on the projectId
                 { $set: { info: JSON.stringify(DataToObject['edge']) } },
