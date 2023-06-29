@@ -54,9 +54,14 @@ async function callChatGPT(prompt) {
     try {
         const openai = new OpenAIApi(configuration);
 
-        const response = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
-            messages: [{role: "user", content: prompt}],
+        const response = await openai.createCompletion({
+            model: "text-davinci-003", // Text Completion : 대화가 아닌 글
+            messages: [
+                { 
+                    role : 'system',
+                    content : 'you are an architectural professional who is about to write a report about recently completed construction sites. Write concise reports in a businesslike tone. Translate your answer into korean'
+                }, 
+                {role: "user", content: `These are sources you should use in report, sources are separated in comma(,) , end of source is "||"  :  ${prompt}  || Here are detailed instruction for report : The report should have the following format: "1. Introduction" "2. Body", "3.Conclusion". First, think about appropriate report draft, and make another draft. Then, compare your two draft and Put the two together and make final draft` }],
         });
 
         return response.data.choices[0].message;
@@ -94,7 +99,7 @@ router.post('/project/report', async (req, res) => {
             return acc;
         }, []);
 
-        const prompt = `${result.join(", ")} 이 단어들을 취합해서 보고서 내용만 상세히 만들어줘`;
+        const prompt = result.join(", ");
         console.log(prompt);
         const response = await callChatGPT(prompt);
 
