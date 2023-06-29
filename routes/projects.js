@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 const ObjectId = mongoose.Types.ObjectId;
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
+const { Configuration, OpenAIApi } = require("openai");
 
 // Google Cloud Storage 클라이언트 생성 및 인증 정보 설정
 const storage = new Storage({
@@ -45,6 +46,26 @@ router.post('/project', async (req, res) => {
     }
 });
 
+async function callChatGPT(prompt) {
+    const configuration = new Configuration({
+        apiKey : process.env.OPENAI_API_KEY,
+    });
+
+    try {
+        const openai = new OpenAIApi(configuration);
+
+        const response = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo",
+            messages: [{role: "user", content: prompt}],
+        });
+
+        return response.data.choices[0].message;
+    } catch (error) {
+        console.error('Error calling ChatGPT Api : ' + error);
+        return null;
+    }
+}
+// REPORT 생성
 router.post('/project/report', async (req, res) => {
     try {
         const projectId = req.body.projectId;
@@ -73,8 +94,14 @@ router.post('/project/report', async (req, res) => {
             return acc;
         }, []);
 
-        console.log(result);
-        res.status(200).json({ message: 'report generated' });
+        const prompt = `${result.join(", ")}이 단어들을 취합해서 보고서 내용만 상세히 만들어줘`;
+        const response = await callChatGPT(prompt);
+
+        res.status(200).json({
+            title : project.name,
+            presenter : userName,
+            content : response
+         });
 
     } catch (err) {
         res.status(500).json({ message: err });
