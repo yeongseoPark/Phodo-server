@@ -45,6 +45,42 @@ router.post('/project', async (req, res) => {
     }
 });
 
+router.post('/project/report', async (req, res) => {
+    try {
+        const projectId = req.body.projectId;
+        const userName = req.user.name;
+
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
+        }
+
+        const node = await Node.findById(project.nodeId);
+        let nodeInfo = JSON.parse(node.info);
+
+        let result = nodeInfo.reduce((acc, item) => {
+            if (item.data) {
+                if (item.data.title) {
+                    acc.push(item.data.title);
+                }
+                if (item.data.content) {
+                    acc.push(item.data.content);
+                }
+                if (item.data.memo) {
+                    acc.push(item.data.memo);
+                }
+            }
+            return acc;
+        }, []);
+
+        console.log(result);
+        res.status(200).json({ message: 'report generated' });
+
+    } catch (err) {
+        res.status(500).json({ message: err });
+    }
+});
+
 /* 프로젝트에 새로운 유저 추가 */
 router.post('/project/:projectId', async(req, res) => {
     try { 
@@ -334,39 +370,5 @@ router.delete('/project/:projectId', async (req, res) => {
     }
 });
 
-router.post('/project/report', async (req, res) => {
-    try {
-        const projectId = req.body.projectId;
-        const userName = req.user.name;
-
-        const project = await Project.findById(projectId);
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found.' });
-        }
-
-        const node = await Node.findById(project.nodeId);
-        let nodeInfo = JSON.parse(node.info);
-
-        let result = nodeInfo.reduce((acc, item) => {
-            if (item.data) {
-                if (item.data.title) {
-                    acc.push(item.data.title);
-                }
-                if (item.data.content) {
-                    acc.push(item.data.content);
-                }
-                if (item.data.memo) {
-                    acc.push(item.data.memo);
-                }
-            }
-            return acc;
-        }, []);
-
-        console.log(result);
-
-    } catch (err) {
-        res.status(500).json({ message: err });
-    }
-});
 
 module.exports = router;
