@@ -152,6 +152,9 @@ app.use(edgeRoutes);
 const projectRoutes = require('./routes/projects');
 app.use(projectRoutes);
 
+const gptRoutes = require('./routes/gpt');
+app.use('/gpt', gptRoutes);
+
 app.use('/api', require('./routes/api'));
 app.use('', require('./routes/nodes'));
 
