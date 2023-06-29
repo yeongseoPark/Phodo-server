@@ -85,6 +85,7 @@ router.post('/project/report', async (req, res) => {
 
         const node = await Node.findById(project.nodeId);
         let nodeInfo = JSON.parse(node.info);
+        console.log("somebody there?");
 
         let result = nodeInfo.reduce((acc, item) => {
             if (item.data) {
