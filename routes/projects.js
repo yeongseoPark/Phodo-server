@@ -55,7 +55,7 @@ async function callChatGPT(prompt) {
         const openai = new OpenAIApi(configuration);
 
         const response = await openai.createCompletion({
-            model: "text-davinci-003", // Text Completion : 대화가 아닌 글
+            model: "gpt-3.5-turbo", // Text Completion : 대화가 아닌 글
             messages: [
                 { 
                     role : 'system',
