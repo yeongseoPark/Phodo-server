@@ -102,7 +102,7 @@ router.post('/project/report', async (req, res) => {
                 }
             }
             return acc;
-        }, { texts: [], urls: [] });
+        }, { texts: [], urls: new Set() });
 
         const prompt = result.texts.join(", ");
         console.log(prompt);
@@ -112,7 +112,7 @@ router.post('/project/report', async (req, res) => {
             title : project.name,
             presenter : userName,
             content : response,
-            urls : new Set(result.urls)
+            urls : Array.from(result.urls)
          });
 
     } catch (err) {
