@@ -94,7 +94,7 @@ router.post('/project/report', async (req, res) => {
             return acc;
         }, []);
 
-        const prompt = `${result.join(", ")}이 단어들을 취합해서 보고서 내용만 상세히 만들어줘`;
+        const prompt = `${result.join(", ")} 이 단어들을 취합해서 보고서 내용만 상세히 만들어줘`;
         console.log(prompt);
         const response = await callChatGPT(prompt);
 
