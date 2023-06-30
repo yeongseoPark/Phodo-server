@@ -154,6 +154,52 @@ router.get('/project/report/:projectId', async (req, res) => {
         res.status(500).json({ message: err });
     }
 });
+const axios = require('axios');
+
+// // 이미지 URL을 Data URL로 변환하는 비동기 함수
+// async function convertToDataURL(url) {
+//     const response = await axios.get(url, { responseType: 'arraybuffer' });
+//     const base64 = Buffer.from(response.data, 'binary').toString('base64');
+//     const dataURL = `data:${response.headers['content-type']};base64,${base64}`;
+//     return dataURL;
+// }
+
+// router.get('/project/images/:projectId', async (req, res) => {
+//     try {
+//         const projectId = req.params.projectId;
+
+//         const project = await Project.findById(projectId);
+//         if (!project) {
+//             return res.status(404).json({ message: 'Project not found.' });
+//         }
+
+//         const node = await Node.findById(project.nodeId);
+//         let nodeInfo = JSON.parse(node.info);
+
+//         let result = nodeInfo.reduce((acc, item) => {
+//             if (item.data) {
+//                 if (item.data.url) {
+//                     acc.urls.add(item.data.url);
+//                 }
+//             }
+//             return acc;
+//         }, { urls: new Set() });
+
+//         let urls = Array.from(result.urls);
+//         // 각 이미지 URL을 Data URL로 변환
+//         let dataURLs = [];
+//         for (let i = 0; i < urls.length; i++) {
+//             const dataURL = await convertToDataURL(urls[i]);
+//             dataURLs.push(dataURL);
+//         }
+
+//         res.status(200).json({
+//             urls : dataURLs
+//         });
+//     } catch (err) {
+//         res.status(500).json({ message: err });
+//     }
+// });
 
 router.get('/project/images/:projectId', async (req, res) => {
     try {
