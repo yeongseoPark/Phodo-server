@@ -136,21 +136,48 @@ router.get('/project/report/:projectId', async (req, res) => {
 
         const prompt = result.texts.join(", ");
         console.log(prompt);
-        const response = await callChatGPT(prompt);
-        papagoTranslate(response)
-        .then(response => {
-            const contentResponse = response.content
-            const stringResponse = JSON.stringify(contentResponse)
-            let finalResponse = await stringResponse.replace(/\\n/g, "");
-            finalResponse = await finalResponse.replace(/\\+/g, "");
+        let response = await callChatGPT(prompt);
+        response = JSON.stringify(response.content);
+        response = await response.replace(/\\n/g, "");
+        response = await response.replace(/\\+/g, "");
+        response = await papagoTranslate(response)
+        response = response.message.result.translatedText
 
-            res.status(200).json({
-                title : project.name,
-                presenter : userName,
-                content : finalResponse,
-                urls : Array.from(result.urls)
-            });
-        })
+        res.status(200).json({
+            title : project.name,
+            presenter : userName,
+            content : response,
+            urls : Array.from(result.urls)
+        });
+    } catch (err) {
+        res.status(500).json({ message: err });
+    }
+});
+
+router.get('/project/images/:projectId', async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
+        }
+
+        const node = await Node.findById(project.nodeId);
+        let nodeInfo = JSON.parse(node.info);
+
+        let result = nodeInfo.reduce((acc, item) => {
+            if (item.data) {
+                if (item.data.url) {
+                    acc.urls.add(item.data.url);
+                }
+            }
+            return acc;
+        }, { urls: new Set() });
+
+        res.status(200).json({
+            urls : Array.from(result.urls)
+        });
     } catch (err) {
         res.status(500).json({ message: err });
     }
