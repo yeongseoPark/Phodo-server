@@ -492,7 +492,7 @@ router.post('/category', async (req, res) => {
         );
 
         if (!image) {
-            return res.status(404).json({ message: 'Image not found.' });
+            return res.status(400).json({ message: 'Image not found.' });
         }
 
         res.status(200).json(image.category);
@@ -507,6 +507,9 @@ router.delete('/category', async (req, res) => {
     const imageId = req.body.imageId;
     const delCategory = req.body.delCategory;
 
+    console.log("이미지아이디: ", imageId);
+    console.log("지울 카테고리: ", delCategory);
+
     try {
         // MongoDB에서 imageId로 이미지를 찾고, category 배열에서 delCategory를 제거합니다.
         const image = await Image.findByIdAndUpdate(
@@ -516,7 +519,7 @@ router.delete('/category', async (req, res) => {
         );
 
         if (!image) {
-            return res.status(404).json({ message: 'Image not found.' });
+            return res.status(400).json({ message: 'Image not found.' });
         }
 
         res.status(200).json(image.category);
