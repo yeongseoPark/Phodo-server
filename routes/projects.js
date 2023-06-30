@@ -84,24 +84,6 @@ async function callChatGPT(prompt) {
     }
 }
 
-async function papagoTranslate(query) {
-    var api_url = 'https://openapi.naver.com/v1/papago/n2mt';
-    var options = {
-        url: api_url,
-        form: {'source':'en', 'target':'ko', 'text':query},
-        headers: {'X-Naver-Client-Id':process.env.PAPAGO_CLIENT_ID, 'X-Naver-Client-Secret': process.env.PAPAGO_CLIENT_SECRET}
-    };
-
-    try {
-        let response = await rp.post(options);
-        return JSON.parse(response); // parse the response to JSON and return
-    } catch (error) {
-        console.log('error = ' + error.statusCode);
-        throw error; // re-throw the error to be caught by the calling function
-    }
-}
-
-
 // REPORT 생성
 router.get('/project/report/:projectId', async (req, res) => {
     try {
@@ -140,7 +122,6 @@ router.get('/project/report/:projectId', async (req, res) => {
         response = JSON.stringify(response.content);
         response = await response.replace(/\\n/g, "");
         response = await response.replace(/\\+/g, "");
-        response = await papagoTranslate(response)
         response = response.message.result.translatedText
 
         res.status(200).json({
