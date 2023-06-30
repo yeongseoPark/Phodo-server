@@ -141,14 +141,43 @@ router.get('/project/report/:projectId', async (req, res) => {
         response = JSON.stringify(response.content);
         response = await response.replace(/\\n/g, "");
         response = await response.replace(/\\+/g, "");
-        console.log("here")
         response = await papagoTranslate(response)
-        console.log("TThere")
+        response = response.message.result.translatedText
 
         res.status(200).json({
             title : project.name,
             presenter : userName,
             content : response,
+            urls : Array.from(result.urls)
+        });
+    } catch (err) {
+        res.status(500).json({ message: err });
+    }
+});
+
+
+router.get('/project/images/:projectId', async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
+        }
+
+        const node = await Node.findById(project.nodeId);
+        let nodeInfo = JSON.parse(node.info);
+
+        let result = nodeInfo.reduce((acc, item) => {
+            if (item.data) {
+                if (item.data.url) {
+                    acc.urls.add(item.data.url);
+                }
+            }
+            return acc;
+        }, { urls: new Set() });
+
+        res.status(200).json({
             urls : Array.from(result.urls)
         });
     } catch (err) {
