@@ -483,6 +483,9 @@ router.post('/category', async (req, res) => {
     const imageId = req.body.imageId;
     const newCategory = req.body.newCategory;
 
+    console.log("이미지아이디: ", imageId);
+    console.log("지울 카테고리: ", newCategory);
+
     try {
         // MongoDB에서 imageId로 이미지를 찾고, category 배열에 newCategory를 추가합니다.
         const image = await Image.findByIdAndUpdate(
