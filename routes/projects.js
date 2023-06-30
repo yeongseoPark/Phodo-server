@@ -74,14 +74,17 @@ async function callChatGPT(prompt) {
 
         return response.data.choices[0].message;
     } catch (error) {
-        console.error('Error calling ChatGPT Api : ' + error);
+        console.error('Error calling ChatGPT Api : ' + error.name);
+        console.error(error.message);
+        console.error(error.stack);
+
         return null;
     }
 }
 // REPORT 생성
-router.post('/project/report', async (req, res) => {
+router.get('/project/report/:projectId', async (req, res) => {
     try {
-        const projectId = req.body.projectId;
+        const projectId = req.params.projectId;
         const userName = req.user.name;
 
         const project = await Project.findById(projectId);
