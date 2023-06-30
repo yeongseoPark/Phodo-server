@@ -12,6 +12,7 @@ const { Storage } = require('@google-cloud/storage');
 const path = require('path');
 const { Configuration, OpenAIApi } = require("openai");
 const rp = require('request-promise'); // request-promise module
+const dotenv = require('dotenv');
 
 // Google Cloud Storage 클라이언트 생성 및 인증 정보 설정
 const storage = new Storage({
@@ -88,8 +89,8 @@ async function papagoTranslate(query) {
     var api_url = 'https://openapi.naver.com/v1/papago/n2mt';
     var options = {
         url: api_url,
-        form: {'source':'ko', 'target':'en', 'text':query},
-        headers: {'X-Naver-Client-Id':process.env.PAPAGO_CLIEND_ID, 'X-Naver-Client-Secret': process.env.PAPAGO_CLIENT_SECRET}
+        form: {'source':'en', 'target':'ko', 'text':query},
+        headers: {'X-Naver-Client-Id':process.env.PAPAGO_CLIENT_ID, 'X-Naver-Client-Secret': process.env.PAPAGO_CLIENT_SECRET}
     };
 
     try {
@@ -136,21 +137,20 @@ router.get('/project/report/:projectId', async (req, res) => {
 
         const prompt = result.texts.join(", ");
         console.log(prompt);
-        const response = await callChatGPT(prompt);
-        papagoTranslate(response)
-        .then(response => {
-            const contentResponse = response.content
-            const stringResponse = JSON.stringify(contentResponse)
-            let finalResponse = await stringResponse.replace(/\\n/g, "");
-            finalResponse = await finalResponse.replace(/\\+/g, "");
+        let response = await callChatGPT(prompt);
+        response = JSON.stringify(response.content);
+        response = await response.replace(/\\n/g, "");
+        response = await response.replace(/\\+/g, "");
+        console.log("here")
+        response = await papagoTranslate(response)
+        console.log("TThere")
 
-            res.status(200).json({
-                title : project.name,
-                presenter : userName,
-                content : finalResponse,
-                urls : Array.from(result.urls)
-            });
-        })
+        res.status(200).json({
+            title : project.name,
+            presenter : userName,
+            content : response,
+            urls : Array.from(result.urls)
+        });
     } catch (err) {
         res.status(500).json({ message: err });
     }
