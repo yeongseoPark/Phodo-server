@@ -29,7 +29,10 @@ const user_part3 = `Also, please do not include "anything irrelevant to the body
 // - 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 뒤에서 제공될 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다. "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요
 // - 보고서 출처 : 당신이 보고서의 기반으로 사용해야 하는 출처들은 쉼표(,)로 구분되어 주어집니다. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 : `;
 const {Translate} = require('@google-cloud/translate').v2;
-const translate = new Translate();
+const translate = new Translate({
+    projectId: 'hyeontest-388510', //eg my-proj-0o0o0o0o'
+    keyFilename: path.join(__dirname, '../hyeontest-388510-6a65bba5d8ca.json') //eg my-proj-0fwewexyz.json
+}); 
 
 // Create new project
 router.post('/project', async (req, res) => {
@@ -100,7 +103,6 @@ async function callChatGPT(prompt) {
 }
 
 async function translateText(text, target) {
-    console.log(text)
     try {
         let [translations] = await translate.translate(text, target);
         translations = Array.isArray(translations) ? translations : [translations];
@@ -148,9 +150,13 @@ router.get('/project/report/:projectId', async (req, res) => {
         prompt = await translateText(prompt, 'en')
         let response = await callChatGPT(prompt);
         response = JSON.stringify(response.content);
+	console.log("리스폰스: ",response);
         response =  await translateText(response, 'ko')
-        response = await response.replace(/\\n/g, "");
+        console.log("중간리스폰스:", response);
+
+        response = await response[0].replace(/\\n/g, "");
         response = await response.replace(/\\+/g, "");
+	console.log("최종리스폰스:", response);
 
         res.status(200).json({
             title : project.name,
