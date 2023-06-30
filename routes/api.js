@@ -456,6 +456,28 @@ router.get('/gallery', async (req, res) => {
     }
 });
 
+router.get('/category', async (req, res) => {
+    const userId = req.user._id;
+    
+    try {
+        // 사용자 ID로 이미지 찾기
+        const images = await Image.find({ userId: userId });
+    
+        // 카테고리만 모으기
+        let categories = [];
+        images.forEach(image => {
+          categories = [...categories, ...image.category];
+        });
+    
+        // 중복 제거
+        categories = [...new Set(categories)];
+    
+        res.status(200).json(categories);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
+});
+
 // 카테고리 추가
 router.post('/category', async (req, res) => {
     const imageId = req.body.imageId;
