@@ -11,6 +11,7 @@ const ObjectId = mongoose.Types.ObjectId;
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
 const { Configuration, OpenAIApi } = require("openai");
+const rp = require('request-promise'); // request-promise module
 
 // Google Cloud Storage 클라이언트 생성 및 인증 정보 설정
 const storage = new Storage({
@@ -18,9 +19,9 @@ const storage = new Storage({
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
 });
 
-const system_content = "당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.";
-const user_part1 = `당신이 보고서의 기반으로 사용해야 하는 출처들은 쉼표(,)로 구분되며, 전체 출처들의 끝은 "||"로 주어집니다. "||"는 단지 출처들의 끝을 나타내니 보고서에 포함하지 마세요. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 : `;
-const user_part2 =  ` || 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 앞서 제공된 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다.  "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요.`;
+const system_content = "You are an architectural professional who needs to write a report on a recently completed construction site. Write a concise report in a businesslike tone.";
+const user_part1 = `The sources you should use as the basis for your report are separated by commas (,), and the entire list of sources ends with "||". The "||" just marks the end of the sources and should not be included in the report. Here are the sources you should use as the basis for your report, be sure to build your report based on them: `;
+const user_part2 =  `|| Detailed report writing instructions: Your report should be formatted as follows: "1. Introduction" "2. Body", "3. Conclusion". Based on the sources provided earlier, organize the flow of those tasks in a proper chronological order in your report. Please think and write step by step, one by one. The length of your report should be one paragraph, 600 words in length. Please respond with your "completed final draft of the report", not your "report writing process".`;
 
 // Create new project
 router.post('/project', async (req, res) => {
@@ -59,7 +60,7 @@ async function callChatGPT(prompt) {
         const openai = new OpenAIApi(configuration);
 
         const response = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo",
+            model: "gpt-3.5-turbo-16k",
             messages: [
               {
                 role: "system",
@@ -77,10 +78,30 @@ async function callChatGPT(prompt) {
         console.error('Error calling ChatGPT Api : ' + error.name);
         console.error(error.message);
         console.error(error.stack);
+        console.error(error.response.data);
 
         return null;
     }
 }
+
+async function papagoTranslate(query) {
+    var api_url = 'https://openapi.naver.com/v1/papago/n2mt';
+    var options = {
+        url: api_url,
+        form: {'source':'ko', 'target':'en', 'text':query},
+        headers: {'X-Naver-Client-Id':process.env.PAPAGO_CLIEND_ID, 'X-Naver-Client-Secret': process.env.PAPAGO_CLIENT_SECRET}
+    };
+
+    try {
+        let response = await rp.post(options);
+        return JSON.parse(response); // parse the response to JSON and return
+    } catch (error) {
+        console.log('error = ' + error.statusCode);
+        throw error; // re-throw the error to be caught by the calling function
+    }
+}
+
+
 // REPORT 생성
 router.get('/project/report/:projectId', async (req, res) => {
     try {
@@ -116,20 +137,20 @@ router.get('/project/report/:projectId', async (req, res) => {
         const prompt = result.texts.join(", ");
         console.log(prompt);
         const response = await callChatGPT(prompt);
+        papagoTranslate(response)
+        .then(response => {
+            const contentResponse = response.content
+            const stringResponse = JSON.stringify(contentResponse)
+            let finalResponse = await stringResponse.replace(/\\n/g, "");
+            finalResponse = await finalResponse.replace(/\\+/g, "");
 
-        console.log(response)
-        const contentResponse = response.content
-        const stringResponse = JSON.stringify(contentResponse)
-        let finalResponse = await stringResponse.replace(/\\n/g, "");
-        finalResponse = await finalResponse.replace(/\\+/g, "");
-
-        res.status(200).json({
-            title : project.name,
-            presenter : userName,
-            content : finalResponse,
-            urls : Array.from(result.urls)
-         });
-
+            res.status(200).json({
+                title : project.name,
+                presenter : userName,
+                content : finalResponse,
+                urls : Array.from(result.urls)
+            });
+        })
     } catch (err) {
         res.status(500).json({ message: err });
     }
