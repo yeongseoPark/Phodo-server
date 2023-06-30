@@ -56,12 +56,12 @@ router.get('/logincheck', (req, res, next) => {
  *         description: There was an error logging out the user
  */
 router.get('/logout', isAuthenticatedUser ,(req, res, next) => {
+  console.log('로그아웃')
   req.logOut(function(err) {
     if (err) {
       return next(err);
     }
 
-    console.log('로그아웃')
     res.status(200).json({'message': 'logged out'});
   });
 });

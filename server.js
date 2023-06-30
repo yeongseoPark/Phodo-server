@@ -111,10 +111,10 @@ app.use(
     saveUninitialized: false,
     resave: false,
     cookie: {
-      sameSite: 'lax',
-      secure: false,
-      // sameSite: 'none',
-      // secure: true,
+      // sameSite: 'lax',
+      // secure: false,
+      sameSite: 'none',
+      secure: true,
       httpOnly: true,
       maxAge : (4 * 60 * 60 * 1000)
     },
