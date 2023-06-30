@@ -155,7 +155,6 @@ router.get('/project/report/:projectId', async (req, res) => {
     }
 });
 
-
 router.get('/project/images/:projectId', async (req, res) => {
     try {
         const projectId = req.params.projectId;
