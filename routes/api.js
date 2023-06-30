@@ -456,6 +456,53 @@ router.get('/gallery', async (req, res) => {
     }
 });
 
+// 카테고리 추가
+router.post('/category', async (req, res) => {
+    const imageId = req.body.imageId;
+    const newCategory = req.body.newCategory;
+
+    try {
+        // MongoDB에서 imageId로 이미지를 찾고, category 배열에 newCategory를 추가합니다.
+        const image = await Image.findByIdAndUpdate(
+            imageId,
+            { $push: { category: newCategory } },
+            { new: true, useFindAndModify: false }
+        );
+
+        if (!image) {
+            return res.status(404).json({ message: 'Image not found.' });
+        }
+
+        res.status(200).json(image.category);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error.' });
+    }
+
+})
+
+// 카테고리 삭제
+router.delete('/category', async (req, res) => {
+    const imageId = req.body.imageId;
+    const delCategory = req.body.delCategory;
+
+    try {
+        // MongoDB에서 imageId로 이미지를 찾고, category 배열에서 delCategory를 제거합니다.
+        const image = await Image.findByIdAndUpdate(
+            imageId,
+            { $pull: { category: delCategory } },
+            { new: true, useFindAndModify: false }
+        );
+
+        if (!image) {
+            return res.status(404).json({ message: 'Image not found.' });
+        }
+
+        res.status(200).json(image.category);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error.' });
+    }
+})
+
 // 갤러리로 카테고리별 이미지 전송 라우트 핸들러
 router.post('/galleryTags', async (req, res) => {
     try {
@@ -614,7 +661,7 @@ router.post('/test', (req, res) => {
             // 딕셔너리 선언(output.json)
             // const dictionary = require('../label_classification/output.json');
 
-            labels.forEach((label) => {      
+            labels.forEach((label) => {
                 Tags.push(label.description.toLowerCase());
                 if (label.score >= 0.8) {
                     TagsGoodscore.push(label.description.toLowerCase());
@@ -688,7 +735,7 @@ router.post('/test', (req, res) => {
         // end 메서드 : 스트림을 종료하고 작업을 완료, image.data : 이미지 데이터 자체.
         stream.end(image.data);
         // 성공 시 : 상태코드 200과 성공 메세지 전
-        
+
     } catch (err) {  // 실패 시 : 상태코드 500과 에러 메세지 전달
         console.error(err);
         res.status(500).json({ error: 'Failed to save image URL' });
