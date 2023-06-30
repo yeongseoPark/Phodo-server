@@ -48,8 +48,7 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
             projectObj.nodeId = id;
   
             const edgeCollection = await db.collection('edges');
-	    console.log('엣지 :', DataToObject['edge']);
-	    console.log('노드 :', DataToObject['node']);
+	    
             updateResult = await edgeCollection.updateOne(
                 { projectId: project },  // Update based on the projectId
                 { $set: { info: JSON.stringify(DataToObject['edge']) } },

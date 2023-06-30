@@ -394,6 +394,7 @@ wsNamespace.on("connection", async (socket) => {
         activeProjects.add(projectId)
     
         const yjsDocToString = await JSON.stringify(yjsDoc);
+
         await client.set(projectId, yjsDocToString, (err) => {
           if (err) console.error(err);
         });
