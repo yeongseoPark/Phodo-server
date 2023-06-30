@@ -20,9 +20,16 @@ const storage = new Storage({
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
 });
 
-const system_content = "당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.";
-const user_part1 = `당신이 보고서의 기반으로 사용해야 하는 출처들은 쉼표(,)로 구분되며, 전체 출처들의 끝은 "||"로 주어집니다. "||"는 단지 출처들의 끝을 나타내니 보고서에 포함하지 마세요. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 : `;
-const user_part2 =  ` || 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 앞서 제공된 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다.  "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요.`;
+// const system_content = "당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.";
+// const user_part1 = `당신이 보고서의 기반으로 사용해야 하는 출처들은 쉼표(,)로 구분되며, 전체 출처들의 끝은 "||"로 주어집니다. "||"는 단지 출처들의 끝을 나타내니 보고서에 포함하지 마세요. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 : `;
+// const user_part2 =  ` || 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 앞서 제공된 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다.  "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요.`;
+
+const reportInstructions = `
+당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.
+- 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 뒤에서 제공될 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다. "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요
+- 보고서 출처 : 당신이 보고서의 기반으로 사용해야 하는 출처들은 쉼표(,)로 구분되어 주어집니다. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 : `;
+
+
 // Create new project
 router.post('/project', async (req, res) => {
     try {
@@ -59,19 +66,25 @@ async function callChatGPT(prompt) {
     try {
         const openai = new OpenAIApi(configuration);
 
-        const response = await openai.createChatCompletion({
+        // const response = await openai.createChatCompletion({
+        //     model: "gpt-3.5-turbo-16k",
+        //     messages: [
+        //       {
+        //         role: "system",
+        //         content: system_content
+        //       },
+        //       {
+        //         role: "user",
+        //         content: `${user_part1}${prompt}${user_part2}`,
+        //       },
+        //     ],
+        //   });
+
+        const response = await openai.createCompletion({
             model: "gpt-3.5-turbo-16k",
-            messages: [
-              {
-                role: "system",
-                content: system_content
-              },
-              {
-                role: "user",
-                content: `${user_part1}${prompt}${user_part2}`,
-              },
-            ],
-          });
+            prompt : reportInstructions + prompt
+
+        });  
 
         return response.data.choices[0].message;
     } catch (error) {
@@ -122,7 +135,6 @@ router.get('/project/report/:projectId', async (req, res) => {
         response = JSON.stringify(response.content);
         response = await response.replace(/\\n/g, "");
         response = await response.replace(/\\+/g, "");
-        response = response.message.result.translatedText
 
         res.status(200).json({
             title : project.name,
