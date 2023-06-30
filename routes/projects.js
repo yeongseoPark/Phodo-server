@@ -12,6 +12,7 @@ const { Storage } = require('@google-cloud/storage');
 const path = require('path');
 const { Configuration, OpenAIApi } = require("openai");
 const rp = require('request-promise'); // request-promise module
+const dotenv = require('dotenv');
 
 // Google Cloud Storage 클라이언트 생성 및 인증 정보 설정
 const storage = new Storage({
@@ -88,8 +89,8 @@ async function papagoTranslate(query) {
     var api_url = 'https://openapi.naver.com/v1/papago/n2mt';
     var options = {
         url: api_url,
-        form: {'source':'ko', 'target':'en', 'text':query},
-        headers: {'X-Naver-Client-Id':process.env.PAPAGO_CLIEND_ID, 'X-Naver-Client-Secret': process.env.PAPAGO_CLIENT_SECRET}
+        form: {'source':'en', 'target':'ko', 'text':query},
+        headers: {'X-Naver-Client-Id':process.env.PAPAGO_CLIENT_ID, 'X-Naver-Client-Secret': process.env.PAPAGO_CLIENT_SECRET}
     };
 
     try {
