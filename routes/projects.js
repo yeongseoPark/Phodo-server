@@ -256,7 +256,8 @@ router.post('/project/:projectId', async(req, res) => {
 
         // 방에 포함된 유저인지 확인
         if (!curUser.projectId.includes(projectId)) {
-            return res.status(400).json({message: "You're not part of this project"}) }
+            return res.status(400).json({message: "You're not part of this project"});
+        }
     
         // 해당하는 유저 이메일로 초대 이메일 발송
         let smtpTransport = nodemailer.createTransport({
@@ -279,16 +280,24 @@ router.post('/project/:projectId', async(req, res) => {
         
         console.log("갔나??")
 
-        smtpTransport.sendMail(mailOptions, err=> {
-            console.log("갔다??", mailOptions)
+        smtpTransport.sendMail(mailOptions, (err, info) => {
+            if (err) {
+                console.log("Failed to send the email: ", err);
+                console.log("Failed to send the email, name : ", err.name);
+                console.log("Failed to send the email, email : ", err.message);
 
-            res.status(200).json({'message': 'Email send with further instructions. Please check that.'});
-          });
+                res.status(500).json({message: "Failed to send the email"});
+            } else {
+                console.log("Email successfully sent with response: ", info);
+                res.status(200).json({'message': 'Email sent with further instructions. Please check that.'});
+            }
+        });
     } catch (err) {
         console.log(err);
         res.status(500).json({message: "Something went wrong."});
     }
 }) 
+
 
 /* 특정 프로젝트 get */
 router.get('/project/:projectId', async(req, res) => { 
