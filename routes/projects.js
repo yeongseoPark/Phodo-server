@@ -211,7 +211,7 @@ router.get('/project/images/:projectId', async (req, res) => {
         }
 
         // 데이터 url들 레디스에 캐싱해두었다가, 추후 zip파일 요청에서 사용
-        req.app.locals.redisClient.set(projectId + 'dataurls')
+        req.app.locals.redisClient.set(projectId + 'dataurls', JSON.stringify(dataURLs))
 
         res.status(200).json({
             urls : dataURLs
@@ -225,6 +225,7 @@ const { promisify } = require('util');
 
 router.get('/project/zipimage/:projectId', async (req, res) => {
     try {
+        console.log("ㅇㅇㅇㅇ")
         const projectId = req.params.projectId;
         const getAsync = promisify(req.app.locals.redisClient.get).bind(req.app.locals.redisClient);
 
