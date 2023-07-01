@@ -221,49 +221,52 @@ router.get('/project/images/:projectId', async (req, res) => {
     }
 });
 
-const { promisify } = require('util');
+router.get('/project/zipimage/:projectId', (req, res) => {
+    const projectId = req.params.projectId;
 
-router.get('/project/zipimage/:projectId', async (req, res) => {
-    try {
-        console.log("ㅇㅇㅇㅇ")
-        const projectId = req.params.projectId;
-        const getAsync = promisify(req.app.locals.redisClient.get).bind(req.app.locals.redisClient);
+    // Redis에서 dataURLs 가져오기
+    req.app.locals.redisClient.get(projectId + 'dataurls', (err, reply) => {
+        console.log("왜!!!!")
+        try {
+            if (err) {
+                console.log(err);
+                return res.status(500).json({message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.'});
+            }
 
-        const reply = await getAsync(projectId + 'dataurls');
-        const dataURLs = JSON.parse(reply);
+            const dataURLs = JSON.parse(reply);
 
-        if (!dataURLs) {
-            return res.status(404).json({message: 'No dataURLs found for this project.'});
+            if (!dataURLs) {
+                return res.status(404).json({message: 'No dataURLs found for this project.'});
+            }
+
+            // 임시 파일 리스트 초기화
+            let tempFiles = [];
+
+            // zip 생성기(archiver) 초기화
+            const zip = archiver('zip', {
+                zlib: { level: 1 }
+            });
+
+            for (let i = 0; i < dataURLs.length; i++) {
+                const url = dataURLs[i];
+                const response = axios.get(url, { responseType: 'arraybuffer' }); // 이미지를 arrayBuffer형태로 다운로드 받음 
+                const buffer = new Buffer.from(response.data, 'binary'); // binary데이터를 다루는데 필요한 Buffer 객체로 변환
+                const stream = streamifier.createReadStream(buffer); // 버퍼 객체로부터 stream 객체를 생성 
+
+                // Stream 객체를 사용해서 바로 zip에 추가
+                zip.append(stream, { name: `image${i}.png` });
+            }
+
+            res.status(200);
+            res.attachment('images.zip'); // 응답 헤더의 content-Disposition 
+
+            // zip 파일을 만들고, 이를 응답에 pipe 함
+            zip.finalize().pipe(res);
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({message: 'Something went wrong.'});
         }
-
-        // 임시 파일 리스트 초기화
-        let tempFiles = [];
-            
-        // zip 생성기(archiver) 초기화
-        const zip = archiver('zip', {
-            zlib: { level: 1 }
-        });
-
-        for (let i = 0; i < dataURLs.length; i++) {
-            const url = dataURLs[i];
-            const response = await axios.get(url, { responseType: 'arraybuffer' }); // 이미지를 arrayBuffer형태로 다운로드 받음 
-            const buffer = new Buffer.from(response.data, 'binary'); // binary데이터를 다루는데 필요한 Buffer 객체로 변환
-            const stream = streamifier.createReadStream(buffer); // 버퍼 객체로부터 stream 객체를 생성 
-
-            // Stream 객체를 사용해서 바로 zip에 추가
-            zip.append(stream, { name: `image${i}.png` });
-        }
-
-        res.status(200);
-        res.attachment('images.zip'); // 응답 헤더의 content-Disposition 
-
-        // zip 파일을 만들고, 이를 응답에 pipe 함
-        zip.finalize().pipe(res);
-    }
-    catch {
-        console.log(err);
-        res.status(500).json({message: 'Something went wrong.'});
-    }
+    })
 });
 
 /* 프로젝트에 새로운 유저 추가 */
