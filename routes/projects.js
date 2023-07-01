@@ -252,7 +252,8 @@ router.post('/project/:projectId', async(req, res) => {
         const projectId = req.params.projectId;
         const InvitedUserEmail = req.body.userEmail;  
         const InvitedUser = await User.findOne({'email' : InvitedUserEmail})
-        
+        console.log("초대받은 유저", JSON.stringify(InvitedUser))
+
         // 방에 포함된 유저인지 확인
         if (!curUser.projectId.includes(projectId)) {
             return res.status(400).json({message: "You're not part of this project"}) }
