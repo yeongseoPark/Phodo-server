@@ -211,7 +211,7 @@ router.get('/project/images/:projectId', async (req, res) => {
         }
 
         // 데이터 url들 레디스에 캐싱해두었다가, 추후 zip파일 요청에서 사용
-        req.app.locals.redisClient.set(projectId + 'dataurls', JSON.stringify(dataURLs))
+        // req.app.locals.redisClient.set(projectId + 'dataurls', JSON.stringify(dataURLs))
 
         res.status(200).json({
             urls : dataURLs
@@ -223,18 +223,32 @@ router.get('/project/images/:projectId', async (req, res) => {
 
 
 router.get('/project/zipimage/:projectId', async (req, res) => {
-    const projectId = req.params.projectId;
+    try {
+        const projectId = req.params.projectId;
 
-    req.app.locals.redisClient.get(projectId + 'dataurls', async (err, reply) => {
-        if (err) {
-            console.log(err);
-            return res.status(500).json({ message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.' });
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
         }
 
-        const dataURLs = JSON.parse(reply);
+        const node = await Node.findById(project.nodeId);
+        let nodeInfo = JSON.parse(node.info);
 
-        if (!dataURLs) {
-            return res.status(404).json({ message: 'No dataURLs found for this project.' });
+        let result = nodeInfo.reduce((acc, item) => {
+            if (item.data) {
+                if (item.data.url) {
+                    acc.urls.add(item.data.url);
+                }
+            }
+            return acc;
+        }, { urls: new Set() });
+
+        let urls = Array.from(result.urls);
+        // 각 이미지 URL을 Data URL로 변환
+        let dataURLs = [];
+        for (let i = 0; i < urls.length; i++) {
+            const dataURL = await convertToDataURL(urls[i]);
+            dataURLs.push(dataURL);
         }
 
         const zip = archiver('zip', {
@@ -266,7 +280,11 @@ router.get('/project/zipimage/:projectId', async (req, res) => {
         }
 
         zip.finalize();
-    });
+
+    }
+    catch (err) {
+
+    }
 });
 
 /* 프로젝트에 새로운 유저 추가 */
