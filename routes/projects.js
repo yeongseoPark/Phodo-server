@@ -276,7 +276,11 @@ router.post('/project/:projectId', async(req, res) => {
             text : '다음의 링크를 클릭하시면 프로젝트 창으로 이동할 수 있습니다' + domain + '/project/' + InvitedUser.email + '/' + projectId
         };
         
+        console.log("갔나??")
+
         smtpTransport.sendMail(mailOptions, err=> {
+            console.log("갔다??", mailOptions)
+
             res.status(200).json({'message': 'Email send with further instructions. Please check that.'});
           });
     } catch (err) {
