@@ -13,7 +13,9 @@ const path = require('path');
 const { Configuration, OpenAIApi } = require("openai");
 const rp = require('request-promise'); // request-promise module
 const dotenv = require('dotenv');
-
+const fs = require('fs');
+const path = require('path');
+const archiver = require('archiver');
 
 // Google Cloud Storage 클라이언트 생성 및 인증 정보 설정      
 const storage = new Storage({
@@ -216,34 +218,46 @@ router.get('/project/images/:projectId', async (req, res) => {
     }
 });
 
-// router.get('/project/images/:projectId', async (req, res) => {
-//     try {
-//         const projectId = req.params.projectId;
+router.post('/project/zipimage/:projectId', async(req, res) => { 
+    try {
+        const dataURLs = req.body.dataURLs;
+        const zip = archiver('zip', {
+            zlib: { level: 9 } // 압축 정도를 선택 
+        });
 
-//         const project = await Project.findById(projectId);
-//         if (!project) {
-//             return res.status(404).json({ message: 'Project not found.' });
-//         }
+        // temprary image file을 정리하기 위해 사용할 것
+        const tempFiles = [];
 
-//         const node = await Node.findById(project.nodeId);
-//         let nodeInfo = JSON.parse(node.info);
+        // 데이터 url들을 임시 이미지 파일로 decode
+        for (let i = 0; i < dataURLs.length; i++) {
+            const dataURL = dataURLs[i];
+            const base64Data = dataURL.replace(/^data:image\/jpeg;base64,/, '');
+            const tempFile = path.join(__dirname, `temp${i}.png`);
 
-//         let result = nodeInfo.reduce((acc, item) => {
-//             if (item.data) {
-//                 if (item.data.url) {
-//                     acc.urls.add(item.data.url);
-//                 }
-//             }
-//             return acc;
-//         }, { urls: new Set() });
+            await fs.promises.writeFile(tempFile, base64Data, 'base64');
 
-//         res.status(200).json({
-//             urls : Array.from(result.urls)
-//         });
-//     } catch (err) {
-//         res.status(500).json({ message: err });
-//     }
-// });
+            tempFiles.push(tempFile);
+            zip.file(tempFile, { name: `image${i}.png` });
+        }
+
+        res.status(200);
+        res.attachment('images.zip');
+
+        // zip data를 응답에 pipe 함
+        zip.finalize().pipe(res);
+
+        // 응답이 완료되면, 임시 이미지 파일들 삭제 
+        res.on('finish', () => {
+            for (let tempFile of tempFiles) {
+                fs.promises.unlink(tempFile).catch(console.error);
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Something went wrong' });
+    }
+});
+
 
 /* 프로젝트에 새로운 유저 추가 */
 router.post('/project/:projectId', async(req, res) => {
