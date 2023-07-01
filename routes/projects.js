@@ -252,7 +252,8 @@ router.post('/project/:projectId', async(req, res) => {
         const projectId = req.params.projectId;
         const InvitedUserEmail = req.body.userEmail;  
         const InvitedUser = await User.findOne({'email' : InvitedUserEmail})
-        console.log("초대받은 유저", JSON.stringify(InvitedUser))
+        const requestURL = req.protocol + '://' + req.get('host') + req.originalUrl;
+        console.log("요청 URL ", requestURL);
 
         // 방에 포함된 유저인지 확인
         if (!curUser.projectId.includes(projectId)) {
@@ -289,7 +290,7 @@ router.post('/project/:projectId', async(req, res) => {
                 res.status(500).json({message: "Failed to send the email"});
             } else {
                 console.log("Email successfully sent with response: ", info);
-                res.status(200).json({'message': 'Email sent with further instructions. Please check that.'});
+                res.status(200).json({'message': `Redirect URL : ${requestURL}`});
             }
         });
     } catch (err) {
