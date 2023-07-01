@@ -290,7 +290,7 @@ router.post('/project/:projectId', async(req, res) => {
                 res.status(500).json({message: "Failed to send the email"});
             } else {
                 console.log("Email successfully sent with response: ", info);
-                res.status(200).json({'message': `Redirect URL : ${requestURL}`});
+                res.status(200).json({'Redirect URL': requestURL});
             }
         });
     } catch (err) {
