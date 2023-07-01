@@ -16,6 +16,8 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
+const axios = require('axios');
+const streamifier = require('streamifier');
 
 // Google Cloud Storage 클라이언트 생성 및 인증 정보 설정      
 const storage = new Storage({
@@ -210,6 +212,9 @@ router.get('/project/images/:projectId', async (req, res) => {
             dataURLs.push(dataURL);
         }
 
+        // 데이터 url들 레디스에 캐싱해두었다가, 추후 zip파일 요청에서 사용
+        req.app.locals.redisClient.set(projectId + 'dataurls')
+
         res.status(200).json({
             urls : dataURLs
         });
@@ -218,43 +223,50 @@ router.get('/project/images/:projectId', async (req, res) => {
     }
 });
 
-router.post('/project/zipimage/:projectId', async(req, res) => { 
+router.get('/project/zipimage/:projectId', async (req, res) => {
     try {
-        const dataURLs = req.body.dataURLs;
-        const zip = archiver('zip', {
-            zlib: { level: 9 } // 압축 정도를 선택 
-        });
+        const projectId = req.params.projectId;
 
-        // temprary image file을 정리하기 위해 사용할 것
-        const tempFiles = [];
-
-        // 데이터 url들을 임시 이미지 파일로 decode
-        for (let i = 0; i < dataURLs.length; i++) {
-            const dataURL = dataURLs[i];
-            const base64Data = dataURL.replace(/^data:image\/jpeg;base64,/, '');
-            const tempFile = path.join(__dirname, `temp${i}.png`);
-
-            await fs.promises.writeFile(tempFile, base64Data, 'base64');
-
-            tempFiles.push(tempFile);
-            zip.file(tempFile, { name: `image${i}.png` });
-        }
-
-        res.status(200);
-        res.attachment('images.zip');
-
-        // zip data를 응답에 pipe 함
-        zip.finalize().pipe(res);
-
-        // 응답이 완료되면, 임시 이미지 파일들 삭제 
-        res.on('finish', () => {
-            for (let tempFile of tempFiles) {
-                fs.promises.unlink(tempFile).catch(console.error);
+        // Redis에서 dataURLs 가져오기
+        client.get(projectId + 'dataurls', async (err, reply) => {
+            if (err) {
+                console.log(err);
+                return res.status(500).json({message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.'});
             }
+
+            const dataURLs = JSON.parse(reply);
+
+            if (!dataURLs) {
+                return res.status(404).json({message: 'No dataURLs found for this project.'});
+            }
+
+            // 임시 파일 리스트 초기화
+            let tempFiles = [];
+
+            // zip 생성기(archiver) 초기화
+            const zip = archiver('zip', {
+                zlib: { level: 9 }
+            });
+
+            for (let i = 0; i < dataURLs.length; i++) {
+                const url = dataURLs[i];
+                const response = await axios.get(url, { responseType: 'arraybuffer' }); // 이미지를 arrayBuffer형태로 다운로드 받음 
+                const buffer = new Buffer.from(response.data, 'binary'); // binary데이터를 다루는데 필요한 Buffer 객체로 변환
+                const stream = streamifier.createReadStream(buffer); // 버퍼 객체로부터 stream 객체를 생성 
+
+                // Stream 객체를 사용해서 바로 zip에 추가
+                zip.append(stream, { name: `image${i}.png` });
+            }
+
+            res.status(200);
+            res.attachment('images.zip'); // 응답 헤더의 content-Disposition 
+            
+            // zip 파일을 만들고, 이를 응답에 pipe 함
+            zip.finalize().pipe(res);
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Something went wrong' });
+        console.log(err);
+        res.status(500).json({message: 'Something went wrong.'});
     }
 });
 

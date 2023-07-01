@@ -217,6 +217,9 @@ client.on('connect', function() {
   console.log('Redis client connected');
 });
 client.on('error', err => console.log('Redis Server Error', err));
+
+// redis client를 애플리케이션 전역에서 사용
+app.locals.redisClient = client;
 /* ----------- Redis -------------- */
 
 // MongoDB 연결 정보
