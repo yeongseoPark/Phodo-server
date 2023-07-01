@@ -15,7 +15,6 @@ function isAuthenticatedUser(req, res, next) {
     return next(); // 다음 middleware
   }
 
-  req.flash('error_msg', 'Please Login first to access this page');
   res.redirect('/login');
 }
 
