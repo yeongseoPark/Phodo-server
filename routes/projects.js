@@ -222,69 +222,49 @@ router.get('/project/images/:projectId', async (req, res) => {
 });
 
 
-router.get('/project/zipimage/:projectId', async (req, res) => {
-    try {
-        const projectId = req.params.projectId;
+const createImageZipFromRedis = async (redisClient, projectId, res) => {
+    console.log("About to get from Redis for projectId: ", projectId);
 
-        const project = await Project.findById(projectId);
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found.' });
+    redisClient.get(projectId + 'dataurls', async (err, reply) => { 
+        console.log("Inside Redis callback");
+        if (err) {
+            console.log("Error from Redis: ", err);
+            return res.status(500).json({ message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.' });
         }
+        console.log("왜!!!!");
+        try {
+            const dataURLs = JSON.parse(reply);
 
-        const node = await Node.findById(project.nodeId);
-        let nodeInfo = JSON.parse(node.info);
-
-        let result = nodeInfo.reduce((acc, item) => {
-            if (item.data) {
-                if (item.data.url) {
-                    acc.urls.add(item.data.url);
-                }
+            if (!dataURLs) {
+                return res.status(404).json({ message: 'No dataURLs found for this project.' });
             }
-            return acc;
-        }, { urls: new Set() });
 
-        let urls = Array.from(result.urls);
-        // 각 이미지 URL을 Data URL로 변환
-        let dataURLs = [];
-        for (let i = 0; i < urls.length; i++) {
-            const dataURL = await convertToDataURL(urls[i]);
-            dataURLs.push(dataURL);
-        }
+            const zip = archiver('zip', {
+                zlib: { level: 1 }
+            });
 
-        const zip = archiver('zip', {
-            zlib: { level: 1 }
-        });
-
-        zip.on('error', function(err) {
-            console.log(err);
-            res.status(500).json({ message: 'ZIP 파일을 생성하는 도중 오류가 발생했습니다.' });
-        });
-
-        res.status(200);
-        res.attachment('images.zip'); 
-
-        zip.pipe(res);
-
-        for (let i = 0; i < dataURLs.length; i++) {
-            try {
+            for (let i = 0; i < dataURLs.length; i++) {
                 const url = dataURLs[i];
-                const response = await axios.get(url, { responseType: 'arraybuffer' });
-                const buffer = Buffer.from(response.data, 'binary');
-                const stream = streamifier.createReadStream(buffer);
+                const response = await axios.get(url, { responseType: 'arraybuffer' }); 
+                const buffer = new Buffer.from(response.data, 'binary'); 
+                const stream = streamifier.createReadStream(buffer); 
 
                 zip.append(stream, { name: `image${i}.png` });
-            } catch (err) {
-                console.log(err);
-                zip.append('Error fetching image', { name: `error${i}.txt` });
             }
+
+            res.status(200);
+            res.attachment('images.zip'); 
+
+            zip.finalize().pipe(res);
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({ message: 'Something went wrong.' });
         }
+    })
+};
 
-        zip.finalize();
-
-    }
-    catch (err) {
-
-    }
+router.get('/project/zipimage/:projectId', async (req, res) => {
+    await createImageZipFromRedis(req.app.locals.redisClient, req.params.projectId, res);
 });
 
 /* 프로젝트에 새로운 유저 추가 */
