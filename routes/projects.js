@@ -222,10 +222,16 @@ router.get('/project/images/:projectId', async (req, res) => {
 });
 
 router.get('/project/zipimage/:projectId', (req, res) => {
-    const projectId = req.params.projectId;
-
     // Redis에서 dataURLs 가져오기
+    const projectId = req.params.projectId;
+    console.log("About to get from Redis for projectId: ", projectId);
+
     req.app.locals.redisClient.get(projectId + 'dataurls', (err, reply) => {
+        console.log("Inside Redis callback");
+        if (err) {
+            console.log("Error from Redis: ", err);
+            return res.status(500).json({message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.'});
+        }
         console.log("왜!!!!")
         try {
             if (err) {
