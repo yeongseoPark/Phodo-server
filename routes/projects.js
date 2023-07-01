@@ -14,7 +14,8 @@ const { Configuration, OpenAIApi } = require("openai");
 const rp = require('request-promise'); // request-promise module
 const dotenv = require('dotenv');
 
-// Google Cloud Storage 클라이언트 생성 및 인증 정보 설정
+
+// Google Cloud Storage 클라이언트 생성 및 인증 정보 설정      
 const storage = new Storage({
     keyFilename: path.join(__dirname, '../rich-wavelet-388908-dad58487deb3.json'), // 서비스 계정 키 파일 경로 설정
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
@@ -99,6 +100,19 @@ async function callChatGPT(prompt) {
     }
 }
 
+async function translateText(text) {
+    console.log(text)
+    try {
+        let [translations] = await translate.translate(text, 'ko');
+        translations = Array.isArray(translations) ? translations : [translations];
+
+        return translations;
+    } catch(err) {
+        console.log(err.message);
+        console.log(err.stack)
+    }
+}
+
 // REPORT 생성
 router.get('/project/report/:projectId', async (req, res) => {
     try {
@@ -131,7 +145,8 @@ router.get('/project/report/:projectId', async (req, res) => {
             return acc;
         }, { texts: [], urls: new Set() });
 
-        const prompt = result.texts.join(", ");
+        let prompt = result.texts.join(", ");
+        prompt = await translateText(prompt)
         console.log(prompt);
         let response = await callChatGPT(prompt);
         response = JSON.stringify(response.content);
@@ -258,9 +273,6 @@ router.post('/project/:projectId', async(req, res) => {
         smtpTransport.sendMail(mailOptions, err=> {
             res.status(200).json({'message': 'Email send with further instructions. Please check that.'});
           });
-
-        res.status(200).json({message: "Invitation successfully sent"});
-
     } catch (err) {
         console.log(err);
         res.status(500).json({message: "Something went wrong."});
