@@ -117,6 +117,20 @@ async function translateText(text, target) {
     }
 }
 
+router.get('/project/name/:projectId', async (req, res) => {
+    const projectId = req.params.projectId;
+    const project = await Project.findById(projectId);
+    if (!project) {
+        return res.status(404).json({ message: 'Project not found.' });
+    }
+
+    try {
+        res.status(200).json({ projectName: project.name });
+    } catch (err) {
+        res.status(500).json({ message: err });
+    }
+});
+
 // REPORT 생성
 router.get('/project/report/:projectId', async (req, res) => {
     try {
