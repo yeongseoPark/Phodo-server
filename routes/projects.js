@@ -252,8 +252,6 @@ router.post('/project/:projectId', async(req, res) => {
         const projectId = req.params.projectId;
         const InvitedUserEmail = req.body.userEmail;  
         const InvitedUser = await User.findOne({'email' : InvitedUserEmail})
-        const requestURL = req.protocol + '://' + req.get('host') + req.originalUrl;
-        console.log("요청 URL ", requestURL);
 
         // 방에 포함된 유저인지 확인
         if (!curUser.projectId.includes(projectId)) {
@@ -276,7 +274,7 @@ router.post('/project/:projectId', async(req, res) => {
             to: InvitedUserEmail,
             from : '1park4170@gmail.com',
             subject : curUser.name + '님이 초대하신' + project.name + '프로젝트에 참여하세요!!',
-            text : '다음의 링크를 클릭하시면 프로젝트 창으로 이동할 수 있습니다' + req.protocol + '://' + req.get('host') + '/project/' + InvitedUser.email + '/' + projectId
+            text : '다음의 링크를 클릭하시면 프로젝트 창으로 이동할 수 있습니다' + 'https://www.phodo.store/project/' + InvitedUser.email + '/' + projectId
         };
         
         console.log("갔나??")
