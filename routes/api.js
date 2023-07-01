@@ -468,25 +468,20 @@ router.get('/category', async (req, res) => {
         images.forEach(image => {
           categories = [...categories, ...image.category];
         });
-
-        // 중복 제거 후 대문자로 변환
-        categories = [...new Set(categories)].map(category => category.toUpperCase());
+    
+        // 중복 제거
+        categories = [...new Set(categories)];
     
         res.status(200).json(categories);
-    } catch (error) {
+      } catch (error) {
         res.status(500).send({ error: error.message });
-    }
+      }
 });
-
 
 // 카테고리 추가
 router.post('/category', async (req, res) => {
     const imageId = req.body.imageId;
-    const newCategory = req.body.newCategory;
-
-    console.log("이미지아이디: ", imageId);
-    console.log("지울 카테고리: ", newCategory);
-
+    const newCategory = req.body.newCategory.toUpperCase();  // 대문자로 변환
     try {
         // MongoDB에서 imageId로 이미지를 찾고, category 배열에 newCategory를 추가합니다.
         const image = await Image.findByIdAndUpdate(
@@ -503,8 +498,8 @@ router.post('/category', async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Server error.' });
     }
+});
 
-})
 
 // 카테고리 삭제
 router.delete('/category', async (req, res) => {
