@@ -14,9 +14,7 @@ const { Configuration, OpenAIApi } = require("openai");
 const rp = require('request-promise'); // request-promise module
 const dotenv = require('dotenv');
 const fs = require('fs');
-const path = require('path');
 const archiver = require('archiver');
-const axios = require('axios');
 const streamifier = require('streamifier');
 
 // Google Cloud Storage 클라이언트 생성 및 인증 정보 설정      

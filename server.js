@@ -218,8 +218,6 @@ client.on('connect', function() {
 });
 client.on('error', err => console.log('Redis Server Error', err));
 
-// redis client를 애플리케이션 전역에서 사용
-app.locals.redisClient = client;
 /* ----------- Redis -------------- */
 
 // MongoDB 연결 정보
@@ -234,6 +232,9 @@ async function initializeDatabases() {
     // Redis 연결
     await client.connect();
     console.log('connected to Redis')
+    
+    // redis client를 애플리케이션 전역에서 사용
+    app.locals.redisClient = client;
 
     // MongoDB 연결
     await mongoClient.connect();
