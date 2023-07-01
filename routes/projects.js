@@ -21,16 +21,19 @@ const storage = new Storage({
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
 });
 
-const system_content = "당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.";
-const user_part1 = `당신이 보고서의 기반으로 사용해야 하는 출처들은 쉼표(,)로 구분되며, 전체 출처들의 끝은 "||"로 주어집니다. "||"는 단지 출처들의 끝을 나타내니 보고서에 포함하지 마세요. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 : `;
-const user_part2 =  ` || 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본론", "3. 결론". 각 부분은 "서론 : ", "본론 : ", "결론 : " 의 형식으로 시작하세요. 앞서 제공된 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다.  "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요.`;
-const user_part3 = `또한, "당신(ChatGpt)이 누구인지", 이 "보고서를 작성할때 참고한 출처가 무엇인지", "어떤 방식으로 보고서를 작성했는지", 등 """보고서 본문과 상관 없는 내용""" 을 포함하지 말고, 단순히 "보고서 자체"만을 생성해서 응답하세요.`
-
+const system_content = "You are an architectural professional who needs to write a report on a recently completed construction site. Write a concise report in a businesslike tone"
+const user_part1 =  `The sources you should use as the basis for your report will be given. and the entire list of sources ends with "||". The "||" just marks the end of the sources, so don't include them in your report. Here are the sources you should use as the basis for your report, be sure to build your report based on them: `;
+const user_part2 =  ` || Guidelines for writing a detailed report: Your report should be formatted as follows: "1. Introduction" "2. Main body", "3. Conclusion". Each part should start in the format of "Introduction:", "Main body:", "Conclusion:" Based on the sources provided earlier, organize the flow of those tasks in the report in a proper chronological order. Please think through each step one by one. Your report should be a single paragraph of 600 characters in length. Please respond with your "completed final draft of the report", not "the process of writing the report"`;
+const user_part3 = `Also, please do not include "anything irrelevant to the body of the report" such as """who you (ChatGpt) are""", """what sources you consulted when writing this report""", """how you wrote the report""", etc. but simply generate and respond to the "report itself".`
 // const reportInstructions = `
 // 당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.
 // - 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 뒤에서 제공될 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다. "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요
 // - 보고서 출처 : 당신이 보고서의 기반으로 사용해야 하는 출처들은 쉼표(,)로 구분되어 주어집니다. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 : `;
-
+const {Translate} = require('@google-cloud/translate').v2;
+const translate = new Translate({
+    projectId: 'hyeontest-388510', //eg my-proj-0o0o0o0o'
+    keyFilename: path.join(__dirname, '../hyeontest-388510-6a65bba5d8ca.json') //eg my-proj-0fwewexyz.json
+}); 
 
 // Create new project
 router.post('/project', async (req, res) => {
@@ -100,10 +103,9 @@ async function callChatGPT(prompt) {
     }
 }
 
-async function translateText(text) {
-    console.log(text)
+async function translateText(text, target) {
     try {
-        let [translations] = await translate.translate(text, 'ko');
+        let [translations] = await translate.translate(text, target);
         translations = Array.isArray(translations) ? translations : [translations];
 
         return translations;
@@ -146,12 +148,16 @@ router.get('/project/report/:projectId', async (req, res) => {
         }, { texts: [], urls: new Set() });
 
         let prompt = result.texts.join(", ");
-        prompt = await translateText(prompt)
-        console.log(prompt);
+        prompt = await translateText(prompt, 'en')
         let response = await callChatGPT(prompt);
         response = JSON.stringify(response.content);
-        response = await response.replace(/\\n/g, "");
+	console.log("리스폰스: ",response);
+        response =  await translateText(response, 'ko')
+        console.log("중간리스폰스:", response);
+
+        response = await response[0].replace(/\\n/g, "");
         response = await response.replace(/\\+/g, "");
+	console.log("최종리스폰스:", response);
 
         res.status(200).json({
             title : project.name,
