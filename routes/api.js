@@ -229,188 +229,43 @@ const storage = new Storage({
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
 });
 
-// 이미지 업로드 및 URL 저장 라우트 핸들러(npm install express-fileupload)
-router.post('/upload', (req, res) => {
-    try {
+const { Worker } = require('worker_threads');
 
-        // 세션에서 현재 로그인한 사용자의 식별자 가져오기
+router.post('/upload', async (req, res) => {
+    try {
         const userId = req.user._id;
-        // 클라이언트로부터 이미지 파일 받기
         let images = req.files.image;
 
-        // images가 배열이 아닌 경우 배열로 감싸기
         if (!Array.isArray(images)) {
             images = [images];
         }
 
-        for (const image of images) {
-            console.log(image);
-            // 이미지 파일 업로드
-            const bucket = storage.bucket('jungle_project');    // Cloud Storage 버킷 이름(jungle_project)
-            const gcsFileName = `${Date.now()}_${image.name}`;  // 업로드할 이미지에 고유한 이름 생성
-            const file = bucket.file(gcsFileName);              // Cloud Storage에 업로드할 파일 생성
-            const stream = file.createWriteStream({             // 이미지 파일을 Stream 형식으로 작성
-                metadata: {   // 파일의 메타 데이터 생성
-                    contentType: image.mimetype,
-                },
-                resumable: false,   // 일시 중지된 업로드를 지원할지 여부 결정
-            });
-
-            // 이미지 업로드 완료 처리(1) : 오류 발생 시 - 응답코드 400
-            stream.on('error', (err) => {
-                console.error(err);
-                res.status(400).json({ error: 'Failed to upload image' });
-            });
-
-            // 이미지 업로드 완료 처리(2) : 업로드 완료 시 (스트림이 모든 데이터를 업로드 한 후)
-            stream.on('finish', async () => {
-                // 업로드한 이미지 url 생성
-                const imageUrl = `https://storage.googleapis.com/jungle_project/${gcsFileName}`;
-
-                // 원본 이미지 파일을 다운로드 받아서 리사이징 후 다시 업로드
-                const tmpFilePath = `/tmp/${gcsFileName}`;
-                await file.download({ destination: tmpFilePath });
-
-                // sharp를 사용해 이미지 사이즈 변경
-                const resizedFileName = `umbnail_${gcsFileName}`;
-                const resizedFilePath = `/tmp/${resizedFileName}`;
-                await sharp(tmpFilePath).resize(128).toFile(resizedFilePath); // resize() 인자로 크기 조정
-
-                // 리사이징한 이미지를 다시 업로드
-                const resizedFile = bucket.file(resizedFileName);
-                await bucket.upload(resizedFilePath);
-                const thumbnailUrl = `https://storage.googleapis.com/jungle_project/${resizedFileName}`;
-
-
-                // Google Cloud Vision API로 이미지 태그 생성
-                const [result] = await vision.labelDetection(imageUrl);
-                const labels = result.labelAnnotations;
-
-                // labels에서 이름 추출
-                const Tags = [];
-                const TagsGoodscore = [];
-                // 딕셔너리 선언(output.json)
-                // const dictionary = require('../label_classification/output.json');
-
-                labels.forEach((label) => {
-                    // 딕셔너리에서 각 label에 해당하는 value값을 태그에 추가
-                    // const value = dictionary[label.description.toLowerCase()];
-                    // if (value) {
-                    //     Tags.push(value);
-                    // }          
-                    Tags.push(label.description.toLowerCase());
-                    if (label.score >= 0.8) {
-                        TagsGoodscore.push(label.description.toLowerCase());
+        const workers = images.map((image) => {
+            const worker = new Worker('./imageProcessingWorker.js', { workerData: { image, userId } });
+            return new Promise((resolve, reject) => {
+                worker.on('message', resolve);
+                worker.on('error', reject);
+                worker.on('exit', (code) => {
+                    if (code !== 0) {
+                        reject(new Error(`Worker stopped with exit code ${code}`));
                     }
                 });
-
-                // Natural Language API를 사용해서 카테고리(범주) 분류
-                const document = {
-                    content: Tags.join(' '), // 태그들을 공백으로 구분하여 하나의 문자열로 합침
-                    type: 'PLAIN_TEXT',
-                };
-
-                // google natural language api version 지정
-                const classificationModelOptions = {
-                    v2Model: {
-                        contentCategoriesVersion: 'V2',
-                    },
-                };
-
-                // 추출한 태그들의 카테고리 분류
-                const [classification] = await language.classifyText({ document, classificationModelOptions, });
-                const categories = classification.categories.map(category => category.name);  // 가장 신뢰도 높은 카테고리 추출
-
-                // 카테고리의 중분류, 소분류를 태그로 추출해서 TagsGoodscore 앞에 삽입
-                const updatedTags = [];
-                const allimageCategory = [];
-                categories.forEach((category) => {
-                    const segments = category.split('/').filter(Boolean);   // '/' 기준 분리 및 빈 문자열 제거
-                    // DB에 넣을 카테고리 분류
-                    changeCategory = Classification(segments);
-                    allimageCategory.push(changeCategory);
-
-                    // 중분류와 소분류만 따로 자르기
-                    let values = segments.slice(1);
-
-                    // 대분류만 존재할 경우
-                    if (!values) {
-                        values = segments.split('&').map(value => value.trim());
-                    }
-                    // 중분류와 소분류를 다시 나누기
-                    else {
-                        for (let i = 0; i < values.length; i++) {
-                            if (values[i].includes('&')) {
-                                const subValues = values[i].split('&').map(value => value.trim());  // '&' 기준 분리 및 공백 제거
-                                values.splice(i, 1, ...subValues);  // values 값을 subValues 값으로 대체
-                                i += subValues.length - 1;
-                            }
-                        }
-                    }
-                    // 추출된 값들 중 'Other' 항목 제거
-                    values = values.filter(value => value !== 'Other');
-                    // updatedTags에 values들 추가
-                    values.forEach((value) => {
-                        updatedTags.push(value.toLowerCase());
-                    });
-                });
-
-                // TagsGoodscore 리스트의 앞에 추가
-                const allUpdatedTags = [...updatedTags, ...TagsGoodscore];
-
-                // 최종 태그 값들 중복값 제거
-                const updatedTagsSet = new Set(allUpdatedTags);
-                const imageTags = [...updatedTagsSet];
-
-                // 최종 카테고리 값들 중복값 제거
-                const imageCategorySet = new Set(allimageCategory);
-                const imageCategory = [...imageCategorySet];
-
-                // Exif 데이터에서 촬영 시간, 위치 가져오기
-                const { creationTime: imageCreationTime, location: imageLocation } = await getImageMetadata(tmpFilePath);
-
-                let address;
-                if (imageLocation == null) {
-                    address = "" // 빈 문자열 설정
-                }
-                if (imageLocation) {
-                    let longitude = imageLocation.longitude;
-                    let latitude = imageLocation.latitude;
-                    address = await getAddressFromCoordinates(longitude, latitude);
-                }
-
-                // 현재 시간을 업로드 타임에으로 저장
-                const uploadTime = new Date();
-
-                // MongoDB에 이미지 URL과 태그 저장
-                // const userId = req.session.id; // 현재 로그인한 사용자의 식별자 가져오기
-                // const userId = req.user.id; // 현재 로그인한 사용자의 식별자 가져오기
-                // console.log(userId);
-                const imageDocument = new Image({
-                    url: imageUrl,
-                    category: imageCategory,
-                    tags: imageTags,
-                    thumbnailUrl: thumbnailUrl,
-                    time: imageCreationTime,
-                    location: address,
-                    userId: userId, // 소유자 정보 할당
-                    uploadTime: uploadTime,
-                });
-                console.log(imageDocument);
-                await imageDocument.save(); // save() 메서드 : mongoDB에 저장
-
             });
-            // 이미지 파일 스트림 종료 및 업로드 완료
-            // end 메서드 : 스트림을 종료하고 작업을 완료, image.data : 이미지 데이터 자체.
-            stream.end(image.data);
+        });
+
+        const results = await Promise.all(workers);
+        for (const result of results) {
+            const imageDocument = new Image(result);
+            await imageDocument.save();
         }
-        // 성공 시 : 상태코드 200과 성공 메세지 전
+
         res.status(200).json({ message: 'Image uploaded and URL saved' });
-    } catch (err) {  // 실패 시 : 상태코드 500과 에러 메세지 전달
+    } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to save image URL' });
     }
 });
+
 
 // 갤러리로 전체 이미지 전송 라우트 핸들러
 router.get('/gallery', async (req, res) => {
