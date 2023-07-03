@@ -17,7 +17,6 @@ const mongoStore = MongoDBStore(session);
 
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
-const flash = require('connect-flash');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const cookieParser = require('cookie-parser');

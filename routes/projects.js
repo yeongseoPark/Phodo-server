@@ -75,7 +75,7 @@ async function callChatGPT(prompt) {
 
         const response = await openai.createChatCompletion({
             model: "gpt-3.5-turbo-16k",
-            // model: "gpt-4",
+            // model: "gpt-4-32k",
             messages: [
               {
                 role: "system",
@@ -557,7 +557,6 @@ router.patch('/project/:projectId', async (req, res) => {
 router.delete('/project/:projectId', async (req, res) => {
     try {
         const projectId = req.params.projectId;
-        const userId = req.user._id;
 
         // Find the project by projectId
         const project = await Project.findById(projectId);
@@ -565,17 +564,24 @@ router.delete('/project/:projectId', async (req, res) => {
             return res.status(404).json({ message: 'Project not found.' });
         }
 
+        // Delete associated nodes and edges
         await Node.findByIdAndDelete(project.nodeId);
         await Edge.findByIdAndDelete(project.edgeId);
+
+        // Get the userIds associated with the project
+        const userIds = project.userIds;
+
+        // Iterate through all userIds and remove the projectId from their projectId array
+        for (let userId of userIds) {
+            const user = await User.findById(userId);
+            user.projectId = user.projectId.filter(id => !id.equals(projectId));
+            await user.save();
+        }
+
+        // Delete project
         await Project.findByIdAndDelete(projectId);
-        
-        // Remove the project's id from the user's projectId array
-        const user = await User.findById(userId);
-        user.projectId = await user.projectId.filter(id => !id.equals(projectId));
 
-        await user.save();
-
-        res.status(200).json({ message: 'Project, its nodes, edges and reference from user were successfully deleted.' });
+        res.status(200).json({ message: 'Project, its nodes, edges and reference from all associated users were successfully deleted.' });
     } catch (err) {
         res.status(500).json({ message: err });
     }

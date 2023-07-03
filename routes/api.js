@@ -15,31 +15,37 @@ const { default: axios } = require('axios');
 const { value } = require('mongoose/lib/options/propertyOptions');
 const Project = require('../models/project');
 
-// 이미지에서 생성 시간과 위치를 반환하는 함수
-async function getImageMetadata(filePath) {
+// 이미지 파일에서 촬영 시간을 읽는 함수
+async function getImageCreationTime(filePath) {
+    try {
+        const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
+        const parser = exifParser.create(fileData); // Exif 파서 생성
+        const result = parser.parse(); // Exif 데이터 파싱
+
+        // "CreateDate" 필드가 Exif 데이터에 있는지 확인
+        if (result.tags && result.tags.DateTimeOriginal) {
+            const date = new Date(result.tags.DateTimeOriginal * 1000); // Exif 태그는 Unix 시간으로 저장됨 (초 단위), 자바스크립트는 밀리초 단위로 처리하므로 변환 필요
+            return date.toISOString().slice(0, 19); // '2020-02-21T14:33:16' 형식의 날짜와 시간 문자열 반환
+        } else if (result.tags && result.tags.ModifyDate) {
+            const modifyTime = new Date(result.tags.ModifyDate * 1000);
+            return modifyTime.toISOString().slice(0, 19);
+        } else {
+            // Exif 데이터가 없다면 파일의 생성 시간을 반환
+            const stat = fs.statSync(filePath);
+            const birthTime = stat.birthtime.toISOString().slice(0, 19);
+            return birthTime;
+        }
+    } catch (error) {
+        console.error(`Failed to read Exif data: ${error}`);
+        return null;
+    }
+}
+
+// 이미지 파일에서 GPS 정보를 읽는 함수
+async function getImageLocation(filePath) {
     try {
         const fileData = fs.readFileSync(filePath); // 파일에서 데이터를 동기적으로 읽음
         const exifData = piexif.load(fileData.toString("binary"));  // fileData를 바이너리 형식으로 변환하고, 이미지 파일의 exif 데이터를 읽어 옴.
-
-        const parser = exifParser.create(fileData);
-        const result = parser.parse();
-
-        // 파일의 생성 시간 추출
-        const { birthtime } = fs.statSync(filePath);
-        const creationTime = birthtime.toISOString().slice(0, 19);
-
-        // Exif 데이터 내 DateTimeOriginal 필드가 존재하면 해당 시간을 반환
-        if (result.tags && result.tags.DateTimeOriginal) {
-            const exifTime = new Date(result.tags.DateTimeOriginal * 1000);
-            return exifTime.toISOString().slice(0, 19);
-        }
-
-        // Exif 데이터 내 ModifyDate 필드가 존재하면 해당 시간을 반환
-        else if (result.tags && result.tags.ModifyDate) {
-            const exifModifiedTime = new Date(result.tags.ModifyDate * 1000);
-            return exifModifiedTime.toISOString().slice(0, 19);
-        }
-
         const gpsData = exifData['GPS'];  // GPS 관련 데이터 추출
 
         // GPS 관련 정보 (GPSLatitude, GPSLongitude)가 exif 데이터에 존재하는지 확인
@@ -47,14 +53,14 @@ async function getImageMetadata(filePath) {
         if (gpsData && gpsData[piexif.GPSIFD.GPSLatitude] && gpsData[piexif.GPSIFD.GPSLongitude]) {
             const latitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLatitude], gpsData[piexif.GPSIFD.GPSLatitudeRef]);
             const longitude = convertDMSToDD(gpsData[piexif.GPSIFD.GPSLongitude], gpsData[piexif.GPSIFD.GPSLongitudeRef]);
-            return { creationTime, location: { latitude, longitude } };
+            return { latitude, longitude };
         } else {
             // Exif 데이터에 GPS 정보가 없을 경우 null 반환
-            return { creationTime, location: null };
+            return null;
         }
     } catch (error) {
-        console.error(`Failed to read metadata from Exif: ${error}`);
-        return { creationTime: new Date().toISOString().slice(0, 19), location: null };
+        console.error(`Failed to read GPS data from Exif: ${error}`);
+        return null;
     }
 }
 
@@ -367,8 +373,8 @@ router.post('/upload', (req, res) => {
                 const imageCategory = [...imageCategorySet];
 
                 // Exif 데이터에서 촬영 시간, 위치 가져오기
-                const { creationTime: imageCreationTime, location: imageLocation } = await getImageMetadata(tmpFilePath);
-
+                const imageCreationTime = await getImageCreationTime(tmpFilePath);
+                const imageLocation = await getImageLocation(tmpFilePath);
                 let address;
                 if (imageLocation == null) {
                     address = "" // 빈 문자열 설정
@@ -535,6 +541,7 @@ router.post('/galleryTags', async (req, res) => {
         const tags = req.body.tags || []; // 태그가 없는 경우 기본값으로 빈 배열 설정
         const startDate = req.body.startDate ? new Date(req.body.startDate) : null; // 시작 날짜가 제공되는 경우 Date 객체로 변환
         const endDate = req.body.endDate ? new Date(req.body.endDate) : null; // 종료 날짜가 제공되는 경우 Date 객체로 변환
+        const location = req.body.location || null; // 장소가 없는 경우 기본값으로 null
 
         console.log(req.body);
 
@@ -547,6 +554,11 @@ router.post('/galleryTags', async (req, res) => {
 
         if (startDate && endDate) {
             imagesQuery = imagesQuery.where('time').gte(startDate).lte(endDate);
+        }
+
+        if (location) {
+            const regex = new RegExp(location, 'i'); // 대소문자 구분 없이 부분 일치 검색을 위한 정규 표현식 생성
+            imagesQuery = imagesQuery.where('location').regex(regex);
         }
 
         imagesQuery = imagesQuery.sort({ uploadTime: -1 }); // 시간 기준으로 내림차순 정렬(최신순)
