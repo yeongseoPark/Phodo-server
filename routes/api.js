@@ -541,6 +541,7 @@ router.post('/galleryTags', async (req, res) => {
         const tags = req.body.tags || []; // 태그가 없는 경우 기본값으로 빈 배열 설정
         const startDate = req.body.startDate ? new Date(req.body.startDate) : null; // 시작 날짜가 제공되는 경우 Date 객체로 변환
         const endDate = req.body.endDate ? new Date(req.body.endDate) : null; // 종료 날짜가 제공되는 경우 Date 객체로 변환
+        const location = req.body.location || null; // 장소가 없는 경우 기본값으로 null
 
         console.log(req.body);
 
@@ -553,6 +554,11 @@ router.post('/galleryTags', async (req, res) => {
 
         if (startDate && endDate) {
             imagesQuery = imagesQuery.where('time').gte(startDate).lte(endDate);
+        }
+
+        if (location) {
+            const regex = new RegExp(location, 'i'); // 대소문자 구분 없이 부분 일치 검색을 위한 정규 표현식 생성
+            imagesQuery = imagesQuery.where('location').regex(regex);
         }
 
         imagesQuery = imagesQuery.sort({ uploadTime: -1 }); // 시간 기준으로 내림차순 정렬(최신순)
