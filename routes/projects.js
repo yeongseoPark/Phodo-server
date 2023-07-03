@@ -73,29 +73,16 @@ async function callChatGPT(prompt) {
     try {
         const openai = new OpenAIApi(configuration);
 
-        const response = await openai.createChatCompletion({
-            model: "gpt-3.5-turbo-16k",
-            // model: "gpt-4-32k",
-            messages: [
-              {
-                role: "system",
-                content: system_content
-              },
-              {
-                role: "user",
-                content: `${user_part1}${prompt}${user_part2}${user_part3}`,
-              },
-            ],
-          });
+        const completion = await openai.createCompletion(
+            {
+              model: "text-davinci-003",
+              prompt: `${system_content1}${system_content2}${user_part1}${prompt}${user_part2}${project_name}${user_part3}${user_part4}${user_part5}${user_part6}`,
+              temperature : 0.6,
+              max_tokens : 4090,  
+            },
+          );
 
-        // const response = await openai.createCompletion({
-        //     model: "gpt-3.5-turbo-16k",
-        //     prompt : reportInstructions + prompt
-
-        // });  
-
-        // console.log("??" + response.data.choices[0].text)
-        return response.data.choices[0].message;
+        return completion.data.choices[0].text;
     } catch (error) {
         console.error('Error calling ChatGPT Api : ' + error.name);
         console.error(error.message);
@@ -167,12 +154,13 @@ router.get('/project/report/:projectId', async (req, res) => {
         let prompt = result.texts.join(", ");
         prompt = await translateText(prompt, 'en')
         let response = await callChatGPT(prompt);
-        response = JSON.stringify(response.content);
-	console.log("리스폰스: ",response);
-        response =  await translateText(response, 'ko')
-        console.log("중간리스폰스:", response);
+        console.log('하...대체..', response)
 
-        response = await response[0].replace(/\\n/g, "");
+        response = JSON.stringify(response[0]);
+        console.log('하...', typeof response)
+        response =  await translateText(response, 'ko')
+
+        response = await response.replace(/\\n/g, "");
         response = await response.replace(/\\+/g, "");
 	console.log("최종리스폰스:", response);
 
