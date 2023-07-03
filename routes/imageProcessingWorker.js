@@ -7,27 +7,25 @@ const Image = require('../models/image'); // Image 모델 불러오기
 const { getImageMetadata, getAddressFromCoordinates, Classification } = require('../helpers');
 
 async function processImage() {
-    const { image, userId } = workerData;
+    const { imagePath, imageName, userId } = workerData;
 
     try {
         const bucket = storage.bucket('jungle_project');
-        const gcsFileName = `${Date.now()}_${image.name}`;
+        const gcsFileName = `${Date.now()}_${imageName}`;
         const file = bucket.file(gcsFileName);
+
         const stream = file.createWriteStream({
             metadata: {
-                contentType: image.mimetype,
+                contentType: 'image/jpeg', // 여기서는 이미지의 mime 타입을 알 수 없으므로, 일반적인 'image/jpeg'을 사용했습니다. 실제 mime 타입을 알고 있다면 이 부분을 변경하시면 됩니다.
             },
             resumable: false,
         });
 
         const imageUrl = `https://storage.googleapis.com/jungle_project/${gcsFileName}`;
 
-        const tmpFilePath = `/tmp/${gcsFileName}`;
-        await file.download({ destination: tmpFilePath });
-
         const resizedFileName = `thumbnail_${gcsFileName}`;
         const resizedFilePath = `/tmp/${resizedFileName}`;
-        await sharp(tmpFilePath).resize(128).toFile(resizedFilePath);
+        await sharp(imagePath).resize(128).toFile(resizedFilePath);
 
         const resizedFile = bucket.file(resizedFileName);
         await bucket.upload(resizedFilePath);

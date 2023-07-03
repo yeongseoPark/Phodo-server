@@ -241,7 +241,12 @@ router.post('/upload', async (req, res) => {
         }
 
         const workers = images.map((image) => {
-            const worker = new Worker('./imageProcessingWorker.js', { workerData: { image, userId } });
+            const workerData = { 
+                imagePath: image.path, 
+                imageName: image.filename, 
+                userId 
+            };
+            const worker = new Worker('./imageProcessingWorker.js', { workerData });
             return new Promise((resolve, reject) => {
                 worker.on('message', resolve);
                 worker.on('error', reject);
