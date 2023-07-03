@@ -22,12 +22,13 @@ const storage = new Storage({
     keyFilename: path.join(__dirname, '../rich-wavelet-388908-dad58487deb3.json'), // 서비스 계정 키 파일 경로 설정
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
 });
-
-const system_content = "You are a middle manager in the supplies division who needs to write a report on the recent company business closing. Write a concise report in a businesslike tone"
+const system_content = "You are a middle manager working for a company in the "
+const system_content2 = " industry who needs to write a report on the recent company business closing. Write a concise report in a businesslike tone"
 const user_part1 =  `The sources you should use as the basis for your report will be given. and the entire list of sources ends with "||". The "||" just marks the end of the sources, so don't include them in your report. Here are the sources you should use as the basis for your report, be sure to build your report based on them: `;
-const user_part2 =  ` || Guidelines for writing a detailed report: Your report should be formatted as follows: "1. Equipment status" "2. Customer complaints", "3. Related Documents". Each part should start in the format of "Equipment status: ", "Customer complaints: ", "Related Documents: " Based on the sources provided earlier, organize the flow of those tasks in the report in a proper chronological order. Please think through each step one by one. Your report should be a single paragraph of 600 characters in length. Please respond with your "completed final draft of the report", not "the process of writing the report"`;
-const user_part3 = `Also, please do not include "anything irrelevant to the body of the report" such as """who you (ChatGpt) are""", """what sources you consulted when writing this report""", """how you wrote the report""", etc. but simply generate and respond to the "report itself".`
-// const reportInstructions = `
+const user_part2 =  ` || Guidelines for writing a detailed report: Your report should be formatted as follows: "1. "subject1" "2. "subject2", "3. "subject3". Each of these topics is a subtopic of "What a middle manager in the   `
+const user_part3 = ` industry should include in a report". Each part should start in the format of "subject1: ", "subject2: ", "subject3: " Based on the sources provided earlier, organize the flow of those tasks in the report in a proper chronological order. Please think through each step one by one. Your report should be a single paragraph of 600 characters in length. Please respond with your "completed final draft of the report", not "the process of writing the report"`;
+const user_part4 = `Also, please do not include "anything irrelevant to the body of the report" such as """who you (ChatGpt) are""", """what sources you consulted when writing this report""", """how you wrote the report""", etc. but simply generate and respond to the "report itself".`
+
 // 당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.
 // - 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 뒤에서 제공될 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다. "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요
 // - 보고서 출처 : 당신이 보고서의 기반으로 사용해야 하는 출처들은 쉼표(,)로 구분되어 주어집니다. 다음은 보고서의 기반으로 사용할 출처들입니다, 반드시 해당 출처들을 기반으로 보고서를 작성하세요 : `;
@@ -65,7 +66,7 @@ router.post('/project', async (req, res) => {
     }
 });
 
-async function callChatGPT(prompt) {
+async function callChatGPT(prompt, project_name) {
     const configuration = new Configuration({
         apiKey : process.env.OPENAI_API_KEY,
     });
@@ -79,11 +80,11 @@ async function callChatGPT(prompt) {
             messages: [
               {
                 role: "system",
-                content: system_content
+                content: system_content + project_name + system_content2
               },
               {
                 role: "user",
-                content: `${user_part1}${prompt}${user_part2}${user_part3}`,
+                content: `${user_part1}${prompt}${user_part2}${project_name}${user_part3}${user_part4}`,
               },
             ],
           });
@@ -166,7 +167,7 @@ router.get('/project/report/:projectId', async (req, res) => {
 
         let prompt = result.texts.join(", ");
         prompt = await translateText(prompt, 'en')
-        let response = await callChatGPT(prompt);
+        let response = await callChatGPT(prompt, project.name);
         response = JSON.stringify(response.content);
 	console.log("리스폰스: ",response);
         response =  await translateText(response, 'ko')
