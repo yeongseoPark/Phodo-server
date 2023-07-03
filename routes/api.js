@@ -470,19 +470,22 @@ router.get('/category', async (req, res) => {
         const images = await Image.find({ userId: userId });
     
         // 카테고리만 모으기
-        let categories = [];
+        let categoriesSet = new Set();
         images.forEach(image => {
-          categories = [...categories, ...image.category];
+          image.category.forEach(category => {
+            categoriesSet.add(category);
+          });
         });
     
-        // 중복 제거
-        categories = [...new Set(categories)];
+        // Set을 배열로 변환
+        let categories = Array.from(categoriesSet);
     
         res.status(200).json(categories);
       } catch (error) {
         res.status(500).send({ error: error.message });
       }
 });
+
 
 // 카테고리 추가
 router.post('/category', async (req, res) => {
