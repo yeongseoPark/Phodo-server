@@ -23,9 +23,9 @@ const storage = new Storage({
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
 });
 
-const system_content = "You are an architectural professional who needs to write a report on a recently completed construction site. Write a concise report in a businesslike tone"
+const system_content = "You are a middle manager in the supplies division who needs to write a report on the recent company business closing. Write a concise report in a businesslike tone"
 const user_part1 =  `The sources you should use as the basis for your report will be given. and the entire list of sources ends with "||". The "||" just marks the end of the sources, so don't include them in your report. Here are the sources you should use as the basis for your report, be sure to build your report based on them: `;
-const user_part2 =  ` || Guidelines for writing a detailed report: Your report should be formatted as follows: "1. Introduction" "2. Main body", "3. Conclusion". Each part should start in the format of "Introduction:", "Main body:", "Conclusion:" Based on the sources provided earlier, organize the flow of those tasks in the report in a proper chronological order. Please think through each step one by one. Your report should be a single paragraph of 600 characters in length. Please respond with your "completed final draft of the report", not "the process of writing the report"`;
+const user_part2 =  ` || Guidelines for writing a detailed report: Your report should be formatted as follows: "1. Equipment status" "2. Customer complaints", "3. Related Documents". Each part should start in the format of "Equipment status: ", "Customer complaints: ", "Related Documents: " Based on the sources provided earlier, organize the flow of those tasks in the report in a proper chronological order. Please think through each step one by one. Your report should be a single paragraph of 600 characters in length. Please respond with your "completed final draft of the report", not "the process of writing the report"`;
 const user_part3 = `Also, please do not include "anything irrelevant to the body of the report" such as """who you (ChatGpt) are""", """what sources you consulted when writing this report""", """how you wrote the report""", etc. but simply generate and respond to the "report itself".`
 // const reportInstructions = `
 // 당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.
@@ -237,69 +237,49 @@ router.get('/project/images/:projectId', async (req, res) => {
 });
 
 
-router.get('/project/zipimage/:projectId', async (req, res) => {
-    try {
-        const projectId = req.params.projectId;
+const createImageZipFromRedis = async (redisClient, projectId, res) => {
+    console.log("About to get from Redis for projectId: ", projectId);
 
-        const project = await Project.findById(projectId);
-        if (!project) {
-            return res.status(404).json({ message: 'Project not found.' });
+    redisClient.get(projectId + 'dataurls', async (err, reply) => { 
+        console.log("Inside Redis callback");
+        if (err) {
+            console.log("Error from Redis: ", err);
+            return res.status(500).json({ message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.' });
         }
+        console.log("왜!!!!");
+        try {
+            const dataURLs = JSON.parse(reply);
 
-        const node = await Node.findById(project.nodeId);
-        let nodeInfo = JSON.parse(node.info);
-
-        let result = nodeInfo.reduce((acc, item) => {
-            if (item.data) {
-                if (item.data.url) {
-                    acc.urls.add(item.data.url);
-                }
+            if (!dataURLs) {
+                return res.status(404).json({ message: 'No dataURLs found for this project.' });
             }
-            return acc;
-        }, { urls: new Set() });
 
-        let urls = Array.from(result.urls);
-        // 각 이미지 URL을 Data URL로 변환
-        let dataURLs = [];
-        for (let i = 0; i < urls.length; i++) {
-            const dataURL = await convertToDataURL(urls[i]);
-            dataURLs.push(dataURL);
-        }
+            const zip = archiver('zip', {
+                zlib: { level: 1 }
+            });
 
-        const zip = archiver('zip', {
-            zlib: { level: 1 }
-        });
-
-        zip.on('error', function(err) {
-            console.log(err);
-            res.status(500).json({ message: 'ZIP 파일을 생성하는 도중 오류가 발생했습니다.' });
-        });
-
-        res.status(200);
-        res.attachment('images.zip'); 
-
-        zip.pipe(res);
-
-        for (let i = 0; i < dataURLs.length; i++) {
-            try {
+            for (let i = 0; i < dataURLs.length; i++) {
                 const url = dataURLs[i];
-                const response = await axios.get(url, { responseType: 'arraybuffer' });
-                const buffer = Buffer.from(response.data, 'binary');
-                const stream = streamifier.createReadStream(buffer);
+                const response = await axios.get(url, { responseType: 'arraybuffer' }); 
+                const buffer = new Buffer.from(response.data, 'binary'); 
+                const stream = streamifier.createReadStream(buffer); 
 
                 zip.append(stream, { name: `image${i}.png` });
-            } catch (err) {
-                console.log(err);
-                zip.append('Error fetching image', { name: `error${i}.txt` });
             }
+
+            res.status(200);
+            res.attachment('images.zip'); 
+
+            zip.finalize().pipe(res);
+        } catch (err) {
+            console.log(err);
+            res.status(500).json({ message: 'Something went wrong.' });
         }
+    })
+};
 
-        zip.finalize();
-
-    }
-    catch (err) {
-
-    }
+router.get('/project/zipimage/:projectId', async (req, res) => {
+    await createImageZipFromRedis(req.app.locals.redisClient, req.params.projectId, res);
 });
 
 /* 프로젝트에 새로운 유저 추가 */
