@@ -26,7 +26,7 @@ const system_content = "You are a middle manager working for a company in the "
 const system_content2 = " industry who needs to write a report on the recent company business closing. Write a concise report in a businesslike tone"
 const user_part1 =  `The sources you should use as the basis for your report will be given. and the entire list of sources ends with "||". The "||" just marks the end of the sources, so don't include them in your report. Here are the sources you should use as the basis for your report, be sure to build your report based on them: `;
 const user_part2 =  ` || Guidelines for writing a detailed report: There will be Three subjects consisting this report. Each of these subject is a subtopic of "What a middle manager in the `
-const user_part3 = ' The industry should be included in the report". The number of topics should be "3".  The final report should be in JSON format. Every subject will be a key in the JSON. There are only 3 keys in the given JSON. For the value of each key, enter the appropriate title value (not the string "subject" or "topic"). And all the values of the keys (the contents of the JSON) must be the contents of the report according to the title. Get the report in JSON format and make it easy to parse. Build the report appropriately based on the source you provided earlier.  Your report should be a single paragraph, 400-600 characters long. Please write it as a "final draft of the completed report", not as a "report writing process"'
+const user_part3 = '  industry should include in the report". The number of topics should be "3".  The final report should be in JSON format. Every subject will be a key in the JSON. There are only 3 keys in the given JSON. For the value of each key, enter the appropriate title value (not the string "subject" or "topic"). And all the values of the keys (the contents of the JSON) must be the contents of the report according to the title. Get the report in JSON format and make it easy to parse. Build the report appropriately based on the source you provided earlier.  Your report should be a single paragraph, 400-600 characters long. Please write it as a "final draft of the completed report", not as a "report writing process"'
 const user_part4 = `Also, please do not include "anything irrelevant to the body of the report" such as """who you (ChatGpt) are""", """what sources you consulted when writing this report""", """how you wrote the report""", etc. but simply generate and respond to the "report itself".`
 const user_part5 = `Example of report : {
     "Company financials" : "The total profit and loss for the quarter was +$1.8 billion, and revenue was $0.2 billion. The largest expense is SG&A. Cash flow and depreciation of inventory are also good. If the current cash flow continues, we can finish the year in the black",
@@ -86,11 +86,11 @@ async function callChatGPT(prompt, project_name) {
 
         const completion = await openai.createCompletion(
             {
-              model: "text-davinci-003",
-              prompt: `${system_content}${system_content2}${user_part1}${prompt}${user_part2}${project_name}${user_part3}${user_part4}${user_part5}${user_part6}`,
-              temperature : 0.6,
-              max_tokens : 2000,
-            },
+                model: "text-davinci-003",
+                prompt: `${system_content}${project_name}${system_content2}${user_part1}${prompt}${user_part2}${project_name}${user_part3}${user_part4}${user_part5}${user_part6}`,
+                temperature : 0.7,
+                max_tokens : 2500, // 프롬프트 + completion최대 길이(=max_tokens)가 4097을 넘어선 안됨 -> 프롬프트는 1500자 정도가 최대
+              },
           );
 
         return completion.data.choices[0].text;
@@ -165,16 +165,15 @@ router.get('/project/report/:projectId', async (req, res) => {
         let prompt = result.texts.join(", ");
         prompt = await translateText(prompt, 'en')
         let response = await callChatGPT(prompt, project.name);
-        console.log('하...대체..', response)
 
-        response = JSON.stringify(response[0]);
+        response = JSON.stringify(response);
+
         response =  await translateText(response, 'ko')
-        console.log('하...', typeof response)
 
-        response = await response.replace(/\\n/g, "");
+        response = await response[0].replace(/\\n/g, "");
 
         response = await response.replace(/\\+/g, "");
-	console.log("최종리스폰스:", response);
+        response = response.slice(1,-1)
         response = JSON.parse(response);
 
         res.status(200).json({

@@ -424,7 +424,6 @@ router.get('/gallery', async (req, res) => {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
         // console.log(req.user)
         const userId = req.user._id;
-        console.log("유저: ", req.user);
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
         const imagesQuery = Image.find({ userId: userId })  // find 메서드의 결과로 쿼리가 생성됨
