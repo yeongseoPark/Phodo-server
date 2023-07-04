@@ -124,7 +124,7 @@ function Classification(categories) {
             changeCategory = '운송';
         }
         else {
-            changeCategory = '기타'
+            changeCategory = '기타 산업'
         }
     }
     else if (categories[0] == 'Computers & Electronics') {
@@ -145,6 +145,23 @@ function Classification(categories) {
     else if (categories[0] == 'Finance') {
         changeCategory = '재무';
     }
+    else if (categories[0] == 'Food & Drink') {
+        changeCategory = '음식';
+    }
+    else if (categories[0] == 'Health') {
+        changeCategory = '건강';
+    }
+    else if (categories[0] == 'Hobbies & Leisure') {
+        changeCategory = '취미/레저';
+    }
+    else if (categories[0] == 'Home & Garden') {
+        if (categories[1] == 'Patio, Lawn & Garden') {
+            changeCategory = '정원';
+        }
+        else {
+            changeCategory = '기타';
+        }
+    }
     else if (categories[0] == 'Internet & Telecom') {
         changeCategory = '통신';
     }
@@ -154,14 +171,113 @@ function Classification(categories) {
     else if (categories[0] == 'News') {
         changeCategory = '뉴스';
     }
+    else if (categories[0] == 'Online Communities') {
+        changeCategory = '온라인 커뮤니티';
+    }
     else if (categories[0] == 'People & Society') {
-        changeCategory = '사회';
+        if (categories[1] == 'Family & Relationships') {
+            changeCategory = '가족';
+        }
+        else if (categories[1] == 'Kids & Teens') {
+            changeCategory = '키즈';
+        }
+        else {
+            changeCategory = '사회';
+        }
+    }
+    else if (categories[0] == 'Pets & Animals') {
+        changeCategory = '동물';
     }
     else if (categories[0] == 'Reference') {
         changeCategory = '레퍼런스';
     }
     else if (categories[0] == 'Science') {
         changeCategory = '과학';
+    }
+    else if (categories[0] == 'Shopping') {
+        if (categories[1] == 'Apparel') {
+            if (categories[2] == 'Athletic Apparel') {
+                changeCategory = '운동복';
+            }
+            else if (categories[2] == 'Casual Apparel') {
+                changeCategory = '캐주얼';
+            }
+            else if (categories[2] == "Children's Clothing") {
+                changeCategory = '아동복';
+            }
+            else if (categories[2] == "Clothing Accessories") {
+                changeCategory = '액세서리';
+            }
+            else if (categories[2] == "Eyewear") {
+                changeCategory = '안경';
+            }
+            else if (categories[2] == "Footwear") {
+                changeCategory = '신발';
+            }
+            else if (categories[2] == "Formal Wear") {
+                changeCategory = '세미정장';
+            }
+            else if (categories[2] == "Headwear") {
+                changeCategory = '모자';
+            }
+            else if (categories[2] == "Men's Clothing") {
+                changeCategory = '남성복';
+            }
+            else if (categories[2] == "Outerwear") {
+                changeCategory = '아우터';
+            }
+            else if (categories[2] == "Pants & Shorts") {
+                changeCategory = '바지';
+            }
+            else if (categories[2] == "Shirts & Tops") {
+                changeCategory = '셔츠';
+            }
+            else if (categories[2] == "Sleepwear") {
+                changeCategory = '잠옷';
+            }
+            else if (categories[2] == "Suits & Business Attire") {
+                changeCategory = '정장';
+            }
+            else if (categories[2] == "Swimwear") {
+                changeCategory = '수영복';
+            }
+            else if (categories[2] == "Undergarments") {
+                changeCategory = '속옷';
+            }
+            else if (categories[2] == "Uniforms & Workwear") {
+                changeCategory = '유니폼';
+            }
+            else if (categories[2] == "Women's Clothing") {
+                changeCategory = '여성복';
+            }
+            else if (categories[2] == "Undergarments") {
+                changeCategory = '속옷';
+            }
+            else {
+                changeCategory = '의복';
+            }
+        }
+        else if (categories[1] == 'Gifts & Special Event Items') {
+            changeCategory = '기프트';
+        }
+        else if (categories[1] == 'Toys') {
+            changeCategory = '장난감';
+        }
+        else {
+            changeCategory = '쇼핑';
+        }
+    }
+    else if (categories[0] == 'Sports') {
+        changeCategory = '스포츠';
+    }
+    else if (categories[0] == 'Travel & Transportation') {
+        changeCategory = '여행/교통';
+    }
+    else if (categories[0] == 'Beauty & Fitness') {
+        changeCategory = '뷰티';
+    }
+    else if (categories[0] == 'Books & Literature') {
+        changeCategory = '문학';
     }
     else if (categories[0] == 'Arts & Entertainment') {
         if (categories[1] == 'Movies'
@@ -172,21 +288,24 @@ function Classification(categories) {
                 || categories[2] == 'TV Guides & Reference') {
                 changeCategory = '레퍼런스'
             }
-            else {
-                changeCategory = '기타';
+        }    
+        else if (categories[1] == 'Movies') {
+            changeCategory = '영화'
+        }
+        else if (categories[1] == 'Music & Audio') {
+            changeCategory = '음악'
+        }
+        else if (categories[1] == 'Performing Arts') {
+            changeCategory = '공연예술'
+        }
+        else if (categories[1] == 'Visual Art & Design') {
+            if (categories[2] == 'Architecture') {
+                changeCategory = '건물'
             }
+            changeCategory = '예술/디자인'
         }
         else {
-            changeCategory = '기타';
-        }
-    }
-    else if (categories[0] == 'Arts & Entertainment') {
-        if (categories[1] == 'Movies'
-            && categories[2] == 'Movie Reference') {
-            changeCategory = '레퍼런스'
-        }
-        else {
-            changeCategory = '기타';
+            changeCategory = '엔터테인먼트';
         }
     }
     else if (categories[0] == 'Games') {
@@ -195,7 +314,7 @@ function Classification(categories) {
             changeCategory = '레퍼런스'
         }
         else {
-            changeCategory = '기타';
+            changeCategory = '게임';
         }
     }
     else {
@@ -297,7 +416,7 @@ router.post('/upload', (req, res) => {
                 const TagsGoodscore = [];
                 // 딕셔너리 선언(output.json)
                 // const dictionary = require('../label_classification/output.json');
-
+                
                 labels.forEach((label) => {
                     // 딕셔너리에서 각 label에 해당하는 value값을 태그에 추가
                     // const value = dictionary[label.description.toLowerCase()];
@@ -309,7 +428,7 @@ router.post('/upload', (req, res) => {
                         TagsGoodscore.push(label.description.toLowerCase());
                     }
                 });
-
+                
                 // Natural Language API를 사용해서 카테고리(범주) 분류
                 const document = {
                     content: Tags.join(' '), // 태그들을 공백으로 구분하여 하나의 문자열로 합침
@@ -360,10 +479,11 @@ router.post('/upload', (req, res) => {
                         updatedTags.push(value.toLowerCase());
                     });
                 });
-
+                console.log(categories);
+                console.log(updatedTags);
                 // TagsGoodscore 리스트의 앞에 추가
                 const allUpdatedTags = [...updatedTags, ...TagsGoodscore];
-
+                console.log(allUpdatedTags);
                 // 최종 태그 값들 중복값 제거
                 const updatedTagsSet = new Set(allUpdatedTags);
                 const imageTags = [...updatedTagsSet];
@@ -371,7 +491,7 @@ router.post('/upload', (req, res) => {
                 // 최종 카테고리 값들 중복값 제거
                 const imageCategorySet = new Set(allimageCategory);
                 const imageCategory = [...imageCategorySet];
-
+                console.log('전체 태그!!!: ', imageCategory);
                 // Exif 데이터에서 촬영 시간, 위치 가져오기
                 const imageCreationTime = await getImageCreationTime(tmpFilePath);
                 const imageLocation = await getImageLocation(tmpFilePath);
