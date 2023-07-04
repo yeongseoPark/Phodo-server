@@ -45,7 +45,7 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
                 const doc = await nodeCollection.findOne({ projectId: project });
                 id = doc._id;
             }
-            console.log(projectObj.edgeId);
+            
             projectObj.nodeId = id;
   
             const edgeCollection = await db.collection('edges');
