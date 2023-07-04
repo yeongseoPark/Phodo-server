@@ -37,7 +37,7 @@ const user_part6 = `. Another Example of report : {
     "Rationale" : "With users increasingly using mobile apps, a company's mobile app platform is becoming increasingly important. This led to our mobile app performance optimization project. The goal was to improve user experience and enhance app performance",
     "Outcome" : "Our team succeeded in reducing the loading time of the app by 30%, which greatly improved the users' satisfaction with using the app. We also fixed several bugs to improve the efficiency of the app, which resulted in a 15% reduction in the app's downtime.",
     "Future plans and outlook" : "In the future, we plan to further improve the usability of the app by focusing on the user interface (UI) and user experience (UX). We expect to make it easier for users to understand and use the app, which will further increase user loyalty. We will also continue to monitor and improve the stability of the app."
-}. The report should always look something like the two examples above `
+}. The form of report should always look like examples above `
 
 // 당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.
 // - 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 뒤에서 제공될 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다. "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요
@@ -87,7 +87,7 @@ async function callChatGPT(prompt, project_name) {
         const completion = await openai.createCompletion(
             {
                 model: "text-davinci-003",
-                prompt: `${system_content}${project_name}${system_content2}${user_part1}${prompt}${user_part2}${project_name}${user_part3}${user_part4}${user_part5}${user_part6}`,
+                prompt: `${system_content}${project_name}${system_content2}${user_part1}${prompt}${user_part2}${project_name}${user_part3}${user_part4}${user_part6}`,
                 temperature : 0.7,
                 max_tokens : 2500, // 프롬프트 + completion최대 길이(=max_tokens)가 4097을 넘어선 안됨 -> 프롬프트는 1500자 정도가 최대
               },
