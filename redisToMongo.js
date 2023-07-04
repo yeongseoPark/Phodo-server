@@ -45,6 +45,7 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
                 const doc = await nodeCollection.findOne({ projectId: project });
                 id = doc._id;
             }
+            
             projectObj.nodeId = id;
   
             const edgeCollection = await db.collection('edges');
@@ -65,6 +66,8 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
   
             await projectObj.save();
   
+            console.log("노드 아이디: ", projectObj.nodeId);
+            console.log("엣지 아이디: ", projectObj.edgeId);
             console.log('Data saved to MongoDB successfully.');
         }
     }

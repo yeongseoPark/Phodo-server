@@ -544,7 +544,6 @@ router.get('/gallery', async (req, res) => {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
         // console.log(req.user)
         const userId = req.user._id;
-        console.log("유저: ", req.user);
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
         const imagesQuery = Image.find({ userId: userId })  // find 메서드의 결과로 쿼리가 생성됨
@@ -590,19 +589,22 @@ router.get('/category', async (req, res) => {
         const images = await Image.find({ userId: userId });
     
         // 카테고리만 모으기
-        let categories = [];
+        let categoriesSet = new Set();
         images.forEach(image => {
-          categories = [...categories, ...image.category];
+          image.category.forEach(category => {
+            categoriesSet.add(category);
+          });
         });
     
-        // 중복 제거
-        categories = [...new Set(categories)];
+        // Set을 배열로 변환
+        let categories = Array.from(categoriesSet);
     
         res.status(200).json(categories);
       } catch (error) {
         res.status(500).send({ error: error.message });
       }
 });
+
 
 // 카테고리 추가
 router.post('/category', async (req, res) => {
