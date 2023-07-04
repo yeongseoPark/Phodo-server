@@ -7,10 +7,20 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
 
     // 열려있는 방 목록을 순회
     for (let project of activeProjects) {
+        console.log("프로젝트아이디 : ", project)
         const redisData = await redisClient.get(project);
         let projectObj;
             try {
                 projectObj = await Project.findById(project);
+                if (!projectObj) {
+                    activeProjects.delete(project);
+                    redisClient.del(project, function(err, response) { // 존재하지 않는 프로젝트 id를 가진 레디스값 삭제
+                        if (err) {
+                          console.log(err);
+                        }
+                    })
+                    continue;
+                }
             } catch (error) {
                 console.error('Error message:', error.message);
                 console.error('Stack trace:', error.stack);
@@ -21,8 +31,7 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
                     }
                 })
 
-                return;
-            
+                continue;
             }          
             const DataToObject = await JSON.parse(redisData);
   

@@ -361,7 +361,7 @@ wsNamespace.on("connection", async (socket) => {
       const count = update[projectId].yjsDoc.count; // 현재 방의 인원수
       // const projectObj = await Project.findById(project);
       const yjsDoc = update[projectId].yjsDoc;
-      console.log("Yjs Connected: ", projectId);
+
       /* 더이상 남아있는 사람이 없으므로, yjsDoc 내용 바로 DB에 쓰고, 레디스의 값은 지워줘야 함 */ 
       if (count <= 0) { 
         const db = mongoClient.db('phodo');
@@ -394,7 +394,6 @@ wsNamespace.on("connection", async (socket) => {
         
       } else { /* redis에 데이터 저장 */  
         activeProjects.add(projectId)
-    
         const yjsDocToString = await JSON.stringify(yjsDoc);
         await client.set(projectId, yjsDocToString, (err) => {
           if (err) console.error(err);
@@ -412,6 +411,7 @@ wsNamespace.on("connection", async (socket) => {
 setInterval(async () => {
   if (activeProjects.size > 0) {
     try {
+      console.log(activeProjects.size)
       await saveDataToMongoDB(activeProjects, mongoClient, client);
     } catch (err) {
       console.error("Error saving data to MongoDB:", err);
