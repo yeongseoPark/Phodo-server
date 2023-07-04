@@ -361,7 +361,6 @@ wsNamespace.on("connection", async (socket) => {
       const count = update[projectId].yjsDoc.count; // 현재 방의 인원수
       // const projectObj = await Project.findById(project);
       const yjsDoc = update[projectId].yjsDoc;
-      console.log("Yjs Connected: ", projectId);
       /* 더이상 남아있는 사람이 없으므로, yjsDoc 내용 바로 DB에 쓰고, 레디스의 값은 지워줘야 함 */ 
       if (count <= 0) { 
         const db = mongoClient.db('phodo');
