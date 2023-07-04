@@ -23,7 +23,7 @@ const storage = new Storage({
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
 });
 const system_content = "You are a middle manager working for a company in the "
-const system_content2 = " industry who needs to write a report on the recent company business closing. Write a concise report in a businesslike tone"
+const system_content2 = " industry who needs to write a report on the recent company business. Write a concise report in a businesslike tone"
 const user_part1 =  `The sources you should use as the basis for your report will be given. and the entire list of sources ends with "||". The "||" just marks the end of the sources, so don't include them in your report. Here are the sources you should use as the basis for your report, be sure to build your report based on them: `;
 const user_part2 =  ` || Guidelines for writing a detailed report: There will be Three subjects consisting this report. Each of these subject is a subtopic of "What a middle manager in the `
 const user_part3 = '  industry should include in the report". The number of topics should be "3".  The final report should be in JSON format. Every subject will be a key in the JSON. There are only 3 keys in the given JSON. For the value of each key, enter the appropriate title value (not the string "subject" or "topic"). And all the values of the keys (the contents of the JSON) must be the contents of the report according to the title. Get the report in JSON format and make it easy to parse. Build the report appropriately based on the source you provided earlier.  Your report should be a single paragraph, 400-600 characters long. Please write it as a "final draft of the completed report", not as a "report writing process"'
