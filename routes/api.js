@@ -250,7 +250,6 @@ router.post('/upload', (req, res) => {
         }
 
         for (const image of images) {
-            console.log(image);
             // 이미지 파일 업로드
             const bucket = storage.bucket('jungle_project');    // Cloud Storage 버킷 이름(jungle_project)
             const gcsFileName = `${Date.now()}_${image.name}`;  // 업로드할 이미지에 고유한 이름 생성
@@ -389,9 +388,6 @@ router.post('/upload', (req, res) => {
                 const uploadTime = new Date();
 
                 // MongoDB에 이미지 URL과 태그 저장
-                // const userId = req.session.id; // 현재 로그인한 사용자의 식별자 가져오기
-                // const userId = req.user.id; // 현재 로그인한 사용자의 식별자 가져오기
-                // console.log(userId);
                 const imageDocument = new Image({
                     url: imageUrl,
                     category: imageCategory,
@@ -402,7 +398,7 @@ router.post('/upload', (req, res) => {
                     userId: userId, // 소유자 정보 할당
                     uploadTime: uploadTime,
                 });
-                console.log(imageDocument);
+                console.log("Image Uploaded: ", imageDocument.url);
                 await imageDocument.save(); // save() 메서드 : mongoDB에 저장
 
             });
@@ -422,7 +418,6 @@ router.post('/upload', (req, res) => {
 router.get('/gallery', async (req, res) => {
     try {
         // 세션에서 현재 로그인한 사용자의 식별자 가져오기
-        // console.log(req.user)
         const userId = req.user._id;
 
         // mongoDB에서 이미지 파일 url과 tag 가져오기 
@@ -451,7 +446,6 @@ router.get('/gallery', async (req, res) => {
                 userId: image.userId,
             };
         });
-        // console.log(imageUrlsTags);
 
         // 성공 시
         res.status(200).json(imageUrlsTags);
@@ -514,9 +508,6 @@ router.delete('/category', async (req, res) => {
     const imageId = req.body.imageId;
     const delCategory = req.body.delCategory;
 
-    console.log("이미지아이디: ", imageId);
-    console.log("지울 카테고리: ", delCategory);
-
     try {
         // MongoDB에서 imageId로 이미지를 찾고, category 배열에서 delCategory를 제거합니다.
         const image = await Image.findByIdAndUpdate(
@@ -545,7 +536,7 @@ router.post('/galleryTags', async (req, res) => {
         const endDate = req.body.endDate ? new Date(req.body.endDate) : null; // 종료 날짜가 제공되는 경우 Date 객체로 변환
         const location = req.body.location || null; // 장소가 없는 경우 기본값으로 null
 
-        console.log(req.body);
+        console.log("galleryTags: ", req.body);
 
         // mongoDB에서 사용자의 이미지 중 요청한 태그를 가진 것만 추출
         let imagesQuery = Image.find({ userId: userId });
@@ -612,22 +603,6 @@ router.post('/galleryDelete', async (req, res) => {
         }
 
         for (const imageId of imageIds) {
-
-            // // 이미지 삭제 전, 다른 곳에서 참조되고 있는지 확인 필요
-            // const nodes = await Node.find({ imageObj: imageID });
-            // const projects = await Project.find({ nodeIds: { $in: nodes.map(node => node._id )}});
-
-            // // 만약 참조되고 있다면
-            // if (nodes.length > 0 || projects.length >0) {
-            //     // const refNodes = nodes.map(node => node._id);
-            //     const refProjects = projects.map(project => project._id);
-            //     res.status(400).json({
-            //         error: "Selected Image is referenced by other Projects",
-            //         refProjects // 참조되고 있는 프로젝트 
-            //     });
-            //     return;
-            // }
-
             // 이미지 삭제
             await Image.findByIdAndDelete({ userId: userId, _id: imageId });
         }
@@ -641,7 +616,6 @@ router.post('/galleryDelete', async (req, res) => {
 
 // 태그 검색
 router.post('/tagSearch', async (req, res) => {
-
     try {
         const tags = req.body.tags;  // 클라이언트가 POST 요청으로 보낸 태그 배열
         const userId = req.user._id;  // 현재 userId  

@@ -176,11 +176,6 @@ router.get('/project/report/:projectId', async (req, res) => {
         response = response.slice(1,-1)
         response = JSON.parse(response);
 
-        console.log("타이틀: ", project.name);
-        console.log("프레젠터: ", userName);
-        console.log("콘텐트: ", response);
-        console.log("유알엘: ", Array.from(result.urls));
-
         res.status(200).json({
             title : project.name,
             presenter : userName,
@@ -251,7 +246,6 @@ const createImageZipFromRedis = async (redisClient, projectId, res) => {
             console.log("Error from Redis: ", err);
             return res.status(500).json({ message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.' });
         }
-        console.log("왜!!!!");
         try {
             const dataURLs = JSON.parse(reply);
 
@@ -318,8 +312,6 @@ router.post('/project/:projectId', async(req, res) => {
             subject : curUser.name + '님이 초대하신' + project.name + '프로젝트에 참여하세요!!',
             text : '다음의 링크를 클릭하시면 프로젝트 창으로 이동할 수 있습니다' + 'https://www.phodo.store/project/' + InvitedUser.email + '/' + projectId
         };
-        
-        console.log("갔나??")
 
         smtpTransport.sendMail(mailOptions, (err, info) => {
             if (err) {
@@ -354,9 +346,6 @@ router.get('/project/:projectId', async(req, res) => {
 
         nodeInfo = nodeInfo ? JSON.parse(nodeInfo) : undefined;
         edgeInfo = edgeInfo ? JSON.parse(edgeInfo) : undefined;
-
-        console.log("노드", nodeInfo);
-        console.log("엣지", edgeInfo);
 
         // 노드 정보와 엣지 정보를 하나의 객체로 만들고 이를 응답으로 전송
         const response = {
