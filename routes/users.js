@@ -192,7 +192,7 @@ router.post('/login', (req, res, next) => {
         user: user
       });
 
-      console.log("로그인시 유저!!!" + req.user);
+      console.log("User Logged in: " + req.user.name);
       return;
     });
 
