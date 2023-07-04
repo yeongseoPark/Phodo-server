@@ -176,6 +176,11 @@ router.get('/project/report/:projectId', async (req, res) => {
         response = response.slice(1,-1)
         response = JSON.parse(response);
 
+        console.log("타이틀: ", project.name);
+        console.log("프레젠터: ", userName);
+        console.log("콘텐트: ", response);
+        console.log("유알엘: ", Array.from(result.urls));
+
         res.status(200).json({
             title : project.name,
             presenter : userName,
