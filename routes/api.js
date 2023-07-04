@@ -158,8 +158,77 @@ function Classification(categories) {
         if (categories[1] == 'Patio, Lawn & Garden') {
             changeCategory = '정원';
         }
+        else if (categories[1] == 'Bed & Bath') {
+            if (categories[2] == 'Bathroom') {
+                changeCategory = '욕실';
+            }
+            else if (categories[2] == 'Bedroom') {
+                changeCategory = '침실';
+            }
+            else {
+                changeCategory = '가정';
+            }
+        }
+        else if (categories[1] == 'Home & Interior Decor') {
+            changeCategory = '인테리어';
+        }
+        else if (categories[1] == 'Home Appliances') {
+            changeCategory = '가전제품';
+        }
+        else if (categories[1] == 'Home Furnishings') {
+            if (categories[2] == 'Clocks') {
+                changeCategory = '시계';
+            }
+            else if (categories[2] == 'Countertops') {
+                changeCategory = '조리대';
+            }
+            else if (categories[2] == 'Curtains & Window Treatments') {
+                changeCategory = '커튼/창문';
+            }
+            else if (categories[2] == 'Kitchen & Dining Furniture') {
+                changeCategory = '주방가구';
+            }
+            else if (categories[2] == 'Lamps & Lighting') {
+                changeCategory = '조명';
+            }
+            else if (categories[2] == 'Living Room Furniture') {
+                changeCategory = '거실가구';
+            }
+            else if (categories[2] == 'Outdoor Furniture') {
+                changeCategory = '야외가구';
+            }
+            else if (categories[2] == 'Rugs & Carpets') {
+                changeCategory = '러그/카펫';
+            }
+            else {
+                changeCategory = '가정용 가구';
+            }
+        }
+        else if (categories[1] == 'Home Improvement') {
+            if (categories[2] == 'Doors & Windows') {
+                changeCategory = '문/창문';
+            }
+            else if (categories[2] == 'Flooring') {
+                changeCategory = '바닥';
+            }
+            else if (categories[2] == 'Roofing') {
+                changeCategory = '지붕';
+            }
+            else if (categories[2] == 'Plumbing') {
+                changeCategory = '배관';
+            }
+            else {
+                changeCategory = '홈 인테리어';
+            }
+        }
+        else if (categories[1] == 'Home Storage & Shelving') {
+            changeCategory = '수납/선반';
+        }
+        else if (categories[1] == 'Kitchen & Dining') {
+            changeCategory = '주방/식당';
+        }
         else {
-            changeCategory = '기타';
+            changeCategory = '가정';
         }
     }
     else if (categories[0] == 'Internet & Telecom') {
