@@ -55,7 +55,7 @@ router.get('/logincheck', (req, res, next) => {
  *         description: There was an error logging out the user
  */
 router.get('/logout', isAuthenticatedUser ,(req, res, next) => {
-  console.log('로그아웃')
+  console.log('User Logged out: ', req.user.name);
   req.logOut(function(err) {
     if (err) {
       return next(err);
@@ -105,13 +105,11 @@ router.get('/logout', isAuthenticatedUser ,(req, res, next) => {
  *         description: There was an error processing the reset token
  */
 router.get('/reset/:token', (req, res) => {
-  console.log(req.params.token);
   User.findOne({
     resetPasswordToken  : req.params.token,
     resetPasswordExpires : {$gt : Date.now()}
   }).then(user => {
     if (!user) {
-      console.log("hereeee");
       res.status(400).json({'message': 'Password reset token is invalid or expired'});
       return;
     }
@@ -239,27 +237,22 @@ router.post('/login', (req, res, next) => {
  */
 router.post('/signup', (req, res) => {
   let {name, email, password} = req.body;
-  console.log(name, email, password);
 
   let userData = {
     name : name,
     email : email,
   };
-  console.log(userData);
 
   User.register(userData, password, (err, user) => {
     if(err) {
-      const status = 400;
       console.log(err);
       res.status(400).json({'message': err});
-      console.log(status);
       return;
     }
 
     passport.authenticate('local') (req, res, () => {
-      const status = 200;
+      console.log("New user: ", userData);
       res.status(200).json({'message': 'Account created successfully'});
-      console.log(status);
     });
   });
 });

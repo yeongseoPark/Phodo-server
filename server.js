@@ -252,7 +252,7 @@ activeProjects = new Set(); // 현재 열려있는 방의 목록들을 추적
 wsNamespace = wsServer.of('/ws')
 
 wsNamespace.on("connection", async (socket) => {
-  console.log("연결좀")
+  console.log("Socket Connected")
   let myRoomName = null;
   let myNickname = null;
 
