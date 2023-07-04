@@ -8,7 +8,6 @@ const Project = require('../models/project');
 router.post('/edges/:projectId', async (req, res) => {
     const projectId = req.params.projectId;
     const edges = req.body.edges;
-
     try {
         // edges 배열의 각 엣지에 대해 MongoDB에 새 Edge를 생성하고, 그 _id를 edgeIds 배열에 추가
         const edgeIds = [];
