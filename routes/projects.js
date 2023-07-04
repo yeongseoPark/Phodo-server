@@ -23,7 +23,7 @@ const storage = new Storage({
     projectId: 'rich-wavelet-388908', // 구글 클라우드 프로젝트 ID
 });
 const system_content = "You are a middle manager working for a company in the "
-const system_content2 = " industry who needs to write a report on the recent company business closing. Write a concise report in a businesslike tone"
+const system_content2 = " industry who needs to write a report on the recent company business. Write a concise report in a businesslike tone"
 const user_part1 =  `The sources you should use as the basis for your report will be given. and the entire list of sources ends with "||". The "||" just marks the end of the sources, so don't include them in your report. Here are the sources you should use as the basis for your report, be sure to build your report based on them: `;
 const user_part2 =  ` || Guidelines for writing a detailed report: There will be Three subjects consisting this report. Each of these subject is a subtopic of "What a middle manager in the `
 const user_part3 = '  industry should include in the report". The number of topics should be "3".  The final report should be in JSON format. Every subject will be a key in the JSON. There are only 3 keys in the given JSON. For the value of each key, enter the appropriate title value (not the string "subject" or "topic"). And all the values of the keys (the contents of the JSON) must be the contents of the report according to the title. Get the report in JSON format and make it easy to parse. Build the report appropriately based on the source you provided earlier.  Your report should be a single paragraph, 400-600 characters long. Please write it as a "final draft of the completed report", not as a "report writing process"'
@@ -37,7 +37,7 @@ const user_part6 = `. Another Example of report : {
     "Rationale" : "With users increasingly using mobile apps, a company's mobile app platform is becoming increasingly important. This led to our mobile app performance optimization project. The goal was to improve user experience and enhance app performance",
     "Outcome" : "Our team succeeded in reducing the loading time of the app by 30%, which greatly improved the users' satisfaction with using the app. We also fixed several bugs to improve the efficiency of the app, which resulted in a 15% reduction in the app's downtime.",
     "Future plans and outlook" : "In the future, we plan to further improve the usability of the app by focusing on the user interface (UI) and user experience (UX). We expect to make it easier for users to understand and use the app, which will further increase user loyalty. We will also continue to monitor and improve the stability of the app."
-}. The report should always look something like the two examples above `
+}. The form of report should always look like examples above `
 
 // 당신은 최근 완공된 건설 현장에 대한 보고서를 작성해야 하는 건축 전문가입니다. 비즈니스 어투로 간결한 보고서를 작성하세요.
 // - 보고서 상세 작성 지침 : 보고서의 형식은 다음과 같아야 합니다: "1. 서론" "2. 본문", "3. 결론". 뒤에서 제공될 출처들을 기반으로, 적절한 시간순으로 해당 작업들의 흐름을 보고서에서 정리하세요. 단계별로 하나씩 하나씩 생각해서 작성해주세요. 보고서의 길이는 600자 길이의 한 문단이어야 합니다. "보고서 작성 과정"이 아닌, "완성된 최종 보고서 초안" 를 응답해주세요
@@ -87,7 +87,7 @@ async function callChatGPT(prompt, project_name) {
         const completion = await openai.createCompletion(
             {
                 model: "text-davinci-003",
-                prompt: `${system_content}${project_name}${system_content2}${user_part1}${prompt}${user_part2}${project_name}${user_part3}${user_part4}${user_part5}${user_part6}`,
+                prompt: `${system_content}${project_name}${system_content2}${user_part1}${prompt}${user_part2}${project_name}${user_part3}${user_part4}${user_part6}`,
                 temperature : 0.7,
                 max_tokens : 2500, // 프롬프트 + completion최대 길이(=max_tokens)가 4097을 넘어선 안됨 -> 프롬프트는 1500자 정도가 최대
               },
@@ -176,11 +176,6 @@ router.get('/project/report/:projectId', async (req, res) => {
         response = response.slice(1,-1)
         response = JSON.parse(response);
 
-        console.log("타이틀: ", project.name);
-        console.log("프레젠터: ", userName);
-        console.log("콘텐트: ", response);
-        console.log("유알엘: ", Array.from(result.urls));
-
         res.status(200).json({
             title : project.name,
             presenter : userName,
@@ -251,7 +246,6 @@ const createImageZipFromRedis = async (redisClient, projectId, res) => {
             console.log("Error from Redis: ", err);
             return res.status(500).json({ message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.' });
         }
-        console.log("왜!!!!");
         try {
             const dataURLs = JSON.parse(reply);
 
@@ -318,8 +312,6 @@ router.post('/project/:projectId', async(req, res) => {
             subject : curUser.name + '님이 초대하신' + project.name + '프로젝트에 참여하세요!!',
             text : '다음의 링크를 클릭하시면 프로젝트 창으로 이동할 수 있습니다' + 'https://www.phodo.store/project/' + InvitedUser.email + '/' + projectId
         };
-        
-        console.log("갔나??")
 
         smtpTransport.sendMail(mailOptions, (err, info) => {
             if (err) {
@@ -354,9 +346,6 @@ router.get('/project/:projectId', async(req, res) => {
 
         nodeInfo = nodeInfo ? JSON.parse(nodeInfo) : undefined;
         edgeInfo = edgeInfo ? JSON.parse(edgeInfo) : undefined;
-
-        console.log("노드", nodeInfo);
-        console.log("엣지", edgeInfo);
 
         // 노드 정보와 엣지 정보를 하나의 객체로 만들고 이를 응답으로 전송
         const response = {
