@@ -178,7 +178,7 @@ router.get('/project/report/:projectId', async (req, res) => {
         try {
             response = JSON.parse(response);
         } catch(err) {
-            response = { "message": response }
+            response = { "개요": response }
         }
         
         console.log("최종 리스폰스 : ", response)
