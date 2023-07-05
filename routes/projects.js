@@ -243,46 +243,6 @@ router.get('/project/images/:projectId', async (req, res) => {
 });
 
 
-const createImageZipFromRedis = async (redisClient, projectId, res) => {
-    console.log("About to get from Redis for projectId: ", projectId);
-
-    redisClient.get(projectId + 'dataurls', async (err, reply) => { 
-        console.log("Inside Redis callback");
-        if (err) {
-            console.log("Error from Redis: ", err);
-            return res.status(500).json({ message: '레디스에서 프로젝트의 dataURL들을 가져오는 과정에서 문제가 발생했습니다.' });
-        }
-        try {
-            const dataURLs = JSON.parse(reply);
-
-            if (!dataURLs) {
-                return res.status(404).json({ message: 'No dataURLs found for this project.' });
-            }
-
-            const zip = archiver('zip', {
-                zlib: { level: 1 }
-            });
-
-            for (let i = 0; i < dataURLs.length; i++) {
-                const url = dataURLs[i];
-                const response = await axios.get(url, { responseType: 'arraybuffer' }); 
-                const buffer = new Buffer.from(response.data, 'binary'); 
-                const stream = streamifier.createReadStream(buffer); 
-
-                zip.append(stream, { name: `image${i}.png` });
-            }
-
-            res.status(200);
-            res.attachment('images.zip'); 
-
-            zip.finalize().pipe(res);
-        } catch (err) {
-            console.log(err);
-            res.status(500).json({ message: 'Something went wrong.' });
-        }
-    })
-};
-
 router.get('/project/zipimage/:projectId', async (req, res) => {
     try {
         const projectId = req.params.projectId;
@@ -297,8 +257,8 @@ router.get('/project/zipimage/:projectId', async (req, res) => {
 
         let result = nodeInfo.reduce((acc, item) => {
             if (item.data) {
-                if (item.data.url) {
-                    acc.urls.add(item.data.url);
+                if (item.data.imageurl) {
+                    acc.urls.add(item.data.imageurl);
                 }
             }
             return acc;
@@ -313,7 +273,7 @@ router.get('/project/zipimage/:projectId', async (req, res) => {
         }
 
         const zip = archiver('zip', {
-            zlib: { level: 1 }
+            zlib: { level: 3 }
         });
 
         zip.on('error', function(err) {
