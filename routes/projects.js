@@ -155,8 +155,8 @@ router.get('/project/report/:projectId', async (req, res) => {
                 if (item.data.memo) {
                     acc.texts.push(item.data.memo);
                 }
-                if (item.data.url) {
-                    acc.urls.add(item.data.url);
+                if (item.data.imageurl) {
+                    acc.urls.add(item.data.imageurl);
                 }
             }
             return acc;
@@ -175,7 +175,7 @@ router.get('/project/report/:projectId', async (req, res) => {
         response = await response.replace(/\\+/g, "");
         response = response.slice(1,-1)
         response = JSON.parse(response);
-
+        console.log("최종 리스폰스 : ", response)
         res.status(200).json({
             title : project.name,
             presenter : userName,
@@ -183,7 +183,7 @@ router.get('/project/report/:projectId', async (req, res) => {
             urls : Array.from(result.urls)
         });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message: err.message , stack : err.stack});
     }
 });
 const axios = require('axios');
@@ -210,8 +210,8 @@ router.get('/project/images/:projectId', async (req, res) => {
 
         let result = nodeInfo.reduce((acc, item) => {
             if (item.data) {
-                if (item.data.url) {
-                    acc.urls.add(item.data.url);
+                if (item.data.imageurl) {
+                    acc.urls.add(item.data.imageurl);
                 }
             }
             return acc;

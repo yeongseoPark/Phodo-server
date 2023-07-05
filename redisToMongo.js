@@ -7,7 +7,6 @@ async function saveDataToMongoDB(activeProjects, mongoClient, redisClient) {
 
     // 열려있는 방 목록을 순회
     for (let project of activeProjects) {
-        console.log("프로젝트아이디 : ", project)
         const redisData = await redisClient.get(project);
         let projectObj;
             try {

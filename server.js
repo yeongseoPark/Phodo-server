@@ -411,7 +411,6 @@ wsNamespace.on("connection", async (socket) => {
 setInterval(async () => {
   if (activeProjects.size > 0) {
     try {
-      console.log(activeProjects.size)
       await saveDataToMongoDB(activeProjects, mongoClient, client);
     } catch (err) {
       console.error("Error saving data to MongoDB:", err);
