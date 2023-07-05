@@ -378,7 +378,7 @@ wsNamespace.on("connection", async (socket) => {
         const edgeCollection = db.collection('edges');
         updateResult = await edgeCollection.updateOne(
           { projectId: projectId },
-          { $set: { "info" : JSON.stringify(yjsDoc.node) }},
+          { $set: { "info" : JSON.stringify(yjsDoc.edge) }},
           {upsert: true}
         );
     

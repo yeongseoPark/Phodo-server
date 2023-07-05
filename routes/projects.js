@@ -284,7 +284,68 @@ const createImageZipFromRedis = async (redisClient, projectId, res) => {
 };
 
 router.get('/project/zipimage/:projectId', async (req, res) => {
-    await createImageZipFromRedis(req.app.locals.redisClient, req.params.projectId, res);
+    try {
+        const projectId = req.params.projectId;
+
+        const project = await Project.findById(projectId);
+        if (!project) {
+            return res.status(404).json({ message: 'Project not found.' });
+        }
+
+        const node = await Node.findById(project.nodeId);
+        let nodeInfo = JSON.parse(node.info);
+
+        let result = nodeInfo.reduce((acc, item) => {
+            if (item.data) {
+                if (item.data.url) {
+                    acc.urls.add(item.data.url);
+                }
+            }
+            return acc;
+        }, { urls: new Set() });
+
+        let urls = Array.from(result.urls);
+        // 각 이미지 URL을 Data URL로 변환
+        let dataURLs = [];
+        for (let i = 0; i < urls.length; i++) {
+            const dataURL = await convertToDataURL(urls[i]);
+            dataURLs.push(dataURL);
+        }
+
+        const zip = archiver('zip', {
+            zlib: { level: 1 }
+        });
+
+        zip.on('error', function(err) {
+            console.log(err);
+            res.status(500).json({ message: 'ZIP 파일을 생성하는 도중 오류가 발생했습니다.' });
+        });
+
+        res.status(200);
+        res.attachment('images.zip'); 
+
+        zip.pipe(res);
+
+        for (let i = 0; i < dataURLs.length; i++) {
+            try {
+                const url = dataURLs[i];
+                const response = await axios.get(url, { responseType: 'arraybuffer' });
+                const buffer = Buffer.from(response.data, 'binary');
+                const stream = streamifier.createReadStream(buffer);
+
+                zip.append(stream, { name: `image${i}.png` });
+            } catch (err) {
+                console.log(err);
+                zip.append('Error fetching image', { name: `error${i}.txt` });
+            }
+        }
+
+        zip.finalize();
+
+    }
+    catch (err) {
+
+    }
 });
 
 /* 프로젝트에 새로운 유저 추가 */
