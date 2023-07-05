@@ -104,6 +104,33 @@ async function callChatGPT(prompt, project_name) {
     }
 }
 
+async function translateText(text, target) {
+    try {
+        let [translations] = await translate.translate(text, target);
+        translations = Array.isArray(translations) ? translations : [translations];
+
+        return translations;
+    } catch(err) {
+        console.log(err.message);
+        console.log(err.stack)
+    }
+}
+
+router.get('/project/name/:projectId', async (req, res) => {
+    const projectId = req.params.projectId;
+    const project = await Project.findById(projectId);
+    if (!project) {
+        return res.status(404).json({ message: 'Project not found.' });
+    }
+
+    try {
+        res.status(200).json({ projectName: project.name });
+    } catch (err) {
+        res.status(500).json({ message: err });
+    }
+});
+
+// REPORT 생성
 router.get('/project/report/:projectId', async (req, res) => {
     try {
         const projectId = req.params.projectId;
@@ -165,7 +192,6 @@ router.get('/project/report/:projectId', async (req, res) => {
         res.status(500).json({ message: err.message , stack : err.stack});
     }
 });
-
 const axios = require('axios');
 
 // 이미지 URL을 Data URL로 변환하는 비동기 함수
