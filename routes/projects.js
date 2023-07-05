@@ -337,7 +337,7 @@ router.post('/project/:projectId', async(req, res) => {
             to: InvitedUserEmail,
             from : '1park4170@gmail.com',
             subject : curUser.name + '님이 초대하신' + project.name + '프로젝트에 참여하세요!!',
-            text : '다음의 링크를 클릭하시면 프로젝트 창으로 이동할 수 있습니다' + 'https://www.phodo.store/project/' + InvitedUser.email + '/' + projectId
+            text : '다음의 링크를 클릭하시면 프로젝트 창으로 이동할 수 있습니다 ' + 'https://www.phodo.store/project/' + InvitedUser.email + '/' + projectId
         };
 
         smtpTransport.sendMail(mailOptions, (err, info) => {
