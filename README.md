@@ -1,6 +1,6 @@
 # Phodo
 
-<img width="331" alt="포ㅗㅗ도" src="https://github.com/yeongseoPark/Phodo-server/assets/79896709/3eab7d72-9594-4b03-88db-73b88d0023cd">
+<img width="650" alt="포ㅗㅗ도" src="https://github.com/yeongseoPark/Phodo-server/assets/79896709/3eab7d72-9594-4b03-88db-73b88d0023cd">
 
 ### 이미지 공유 협업 툴 Phodo
 
@@ -26,32 +26,40 @@
 
 웹사이트 : [바로가기](www.phodo.store)
 
-시연 영상 : [바로가기](www.아직안됨.com)
+발표표 영상 : [바로가기](https://www.youtube.com/watch?v=EIHqqGvtivI)
 
 ## 서비스 소개
 ### Phodo에서는 이런 기능을 사용할 수 있습니다
 1. 유저가 업로드한 사진을 분석하여 자동 태깅 및, 자동 카테고리 분류
+사진 넣기
 
 2. 그룹으로 실시간 동시작업과 음성통화를 통한 업무 공유
+사진 넣기
 
 3. 회의 내용에 따른 자동 AI보고서 작성
-
+사진 넣기
 
 ## Backend는 이런 일을 했습니다!
 ### 1. 업로드 시 Google Cloud vision과 Google natural language api를 통한 태깅 및 카테고리 분류
 
 ### 2. 실시간 작업 데이터 처리에 적합한 구조 설계 
+<img width="595" alt="image" src="https://github.com/yeongseoPark/Phodo-server/assets/79896709/8f68464d-9e4c-423c-93bf-dc3af62fbce0">
+- 공유 작업 데이터에 대한 데이터를 Yjs에서 웹소켓을 이용하여 실시간으로 메인서버로 전송합니다.
+- 이를 받은 백엔드는, Redis에 데이터를 먼저 저장한 후, DB에 주기적으로 값을 저장하는 Write-back 방식을 사용했습니다.
+- 이를 통해 잦은 디스크 접근에 대한 비용을 줄일 수 있었습니다.
 
 ### 3. 웹소켓 Signalling Server구현
+- 실시간 편집 창에 접속한 브라우저들의 P2P WebRTC 통신 성립을 위한 signalling server 구현
+- 이때, mesh 방식을 사용했기 때문에, 각 peer(브라우저)는 자신이 접속하려는 방의 모든 유저들에 P2P연결을 수립해야 함
+- 이를 위해 각 방을 roomObjArr이라는 구조체로 관리
+- offer -> answer -> ice 의 WebRTC 성립 단계에 맞는 웹소켓 이벤트를 listen하고, 이에 적합한 이벤트를 emit.
 
 ### 4. ChagGPT 프롬프팅을 통한 자동 보고서 생성
-
-
-### 5. 이미지 압축 및...?
+- text-davinci-003 모델을 사용하여 chatGPT와 completion...써야함
 
 
 ## 서비스 구조도
-<img width="308" alt="아키텍쳐" src="https://github.com/yeongseoPark/Phodo-server/assets/79896709/a753895a-5d42-4a0c-a7cb-11a4bb38e164">
+<img width="800" alt="아키텍쳐" src="https://github.com/yeongseoPark/Phodo-server/assets/79896709/a753895a-5d42-4a0c-a7cb-11a4bb38e164">
 
 
 ## 프로젝트 포스터
