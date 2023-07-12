@@ -33,8 +33,9 @@
 1. 유저가 업로드한 사진을 분석하여 자동 태깅 및, 자동 카테고리 분류
 <img src="https://github.com/yeongseoPark/Phodo-server/assets/118068099/f7f91d46-a73b-4652-bf40-0a5448783b83">
 
-3. 그룹으로 실시간 동시작업과 음성통화를 통한 업무 공유
+2. 그룹으로 실시간 동시작업과 음성통화를 통한 업무 공유
 사진 넣기
+<img src="https://github.com/yeongseoPark/Phodo-server/assets/118068099/2a52c0eb-7116-45e2-a177-eeb70dbccb2b">
 
 4. 회의 내용에 따른 자동 AI보고서 작성
 사진 넣기
