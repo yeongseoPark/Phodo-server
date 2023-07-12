@@ -30,16 +30,14 @@
 
 ## 서비스 소개
 ### Phodo에서는 이런 기능을 사용할 수 있습니다
-
+<br>
 1. 유저가 업로드한 사진을 분석하여 자동 태깅 및, 자동 카테고리 분류
 <img src="https://github.com/yeongseoPark/Phodo-server/assets/118068099/f7f91d46-a73b-4652-bf40-0a5448783b83">
 자동으로 분류된 사진들 중에서 원하는 날짜, 카테고리, 장소를 기준으로 필터링할 수 있으며 필요한 경우 이미지에 나만의 카테고리를 생성, 삭제가 가능합니다.
-
-
+<br>
 2. 그룹으로 실시간 동시작업과 음성통화를 통한 업무 공유
 <img src="https://github.com/yeongseoPark/Phodo-server/assets/118068099/2a52c0eb-7116-45e2-a177-eeb70dbccb2b">
-
-
+<br>
 3. 회의 내용에 따른 자동 AI보고서 작성
 <img src="https://github.com/yeongseoPark/Phodo-server/assets/118068099/7b5c9de7-c308-4983-b6f5-ce10b9674aee">
 
