@@ -34,11 +34,10 @@
 <img src="https://github.com/yeongseoPark/Phodo-server/assets/118068099/f7f91d46-a73b-4652-bf40-0a5448783b83">
 
 2. 그룹으로 실시간 동시작업과 음성통화를 통한 업무 공유
-사진 넣기
 <img src="https://github.com/yeongseoPark/Phodo-server/assets/118068099/2a52c0eb-7116-45e2-a177-eeb70dbccb2b">
 
-4. 회의 내용에 따른 자동 AI보고서 작성
-사진 넣기
+3. 회의 내용에 따른 자동 AI보고서 작성
+<img src="https://github.com/yeongseoPark/Phodo-server/assets/118068099/7b5c9de7-c308-4983-b6f5-ce10b9674aee">
 
 ## Backend는 이런 일을 했습니다!
 ### 1. 업로드 시 Google Cloud vision과 Google natural language api를 통한 태깅 및 카테고리 분류
