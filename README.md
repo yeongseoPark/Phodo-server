@@ -24,9 +24,9 @@
 
 팀원 : [박영서(BE)](https://github.com/yeongseoPark), [김현태(BE)](https://github.com/HyeonTee), [정진교(FE)](https://github.com/JinkyoJB), [이호준(FE)](https://github.com/hodeethelion), [권도희(FE/BE)](https://github.com/shiwy15)
 
-웹사이트 : [바로가기](www.phodo.store)
+웹사이트 : [바로가기](https://www.phodo.store)
 
-발표표 영상 : [바로가기](https://www.youtube.com/watch?v=EIHqqGvtivI)
+발표 영상 : [바로가기](https://www.youtube.com/watch?v=EIHqqGvtivI)
 
 ## 서비스 소개
 ### Phodo에서는 이런 기능을 사용할 수 있습니다
